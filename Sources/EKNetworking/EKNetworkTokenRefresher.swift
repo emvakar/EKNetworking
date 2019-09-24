@@ -14,7 +14,7 @@ public protocol EKNetworkTokenRefresherProtocol {
 
 public class EKNetworkTokenRefresher: EKNetworkTokenRefresherProtocol {
 
-    private let accountManager: EKAccountManagerProtocol
+    public var accountManager: EKAccountManagerProtocol
 
     public init(accountManager: EKAccountManagerProtocol) {
         self.accountManager = accountManager
