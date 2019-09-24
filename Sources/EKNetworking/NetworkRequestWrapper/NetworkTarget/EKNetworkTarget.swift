@@ -78,6 +78,10 @@ public struct EKNetworkTarget: TargetType {
         self.apiRequest.headers.forEach {
             dictionary.updateValue($0.value, forKey: $0.key.rawValue)
         }
+        
+        if let value = authToken {
+            dictionary.updateValue(value, forKey: EKHeadersKey.authorization.rawValue)
+        }
         return dictionary
     }
 }

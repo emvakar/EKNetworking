@@ -17,11 +17,11 @@ public protocol EKErrorHandleDelegate: class {
     func handle(error: EKNetworkError?, statusCode: Int)
 }
 
-public class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
+open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     
     weak var delegate: EKErrorHandleDelegate?
     
-    public func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
+    open func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
 
         let target = EKNetworkTarget(request: request, token: authToken, baseURL: baseURL)
 
