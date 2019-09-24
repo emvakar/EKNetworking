@@ -12,7 +12,7 @@ public class EKNetworkRequestProvider {
 
     let networkWrapper: EKNetworkRequestWrapperProtocol
     let tokenRefresher: EKNetworkTokenRefresherProtocol?
-    let accountManager: EKAccountManagerProtocol
+    public let accountManager: EKAccountManagerProtocol
 
     public init(networkWrapper: EKNetworkRequestWrapperProtocol, tokenRefresher: EKNetworkTokenRefresherProtocol?, accountManager: EKAccountManagerProtocol) {
         self.networkWrapper = networkWrapper
