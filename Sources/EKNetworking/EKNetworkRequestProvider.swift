@@ -14,13 +14,13 @@ public class EKNetworkRequestProvider {
     let tokenRefresher: EKNetworkTokenRefresherProtocol?
     let accountManager: EKAccountManagerProtocol
 
-    init(networkWrapper: EKNetworkRequestWrapperProtocol, tokenRefresher: EKNetworkTokenRefresherProtocol?, accountManager: EKAccountManagerProtocol) {
+    public init(networkWrapper: EKNetworkRequestWrapperProtocol, tokenRefresher: EKNetworkTokenRefresherProtocol?, accountManager: EKAccountManagerProtocol) {
         self.networkWrapper = networkWrapper
         self.tokenRefresher = tokenRefresher
         self.accountManager = accountManager
     }
 
-    internal func runRequest(_ request: EKNetworkRequest, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
+    public func runRequest(_ request: EKNetworkRequest, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
 
         let baseUrl = self.accountManager.getBaseUrl()
         var tokenString: String?
