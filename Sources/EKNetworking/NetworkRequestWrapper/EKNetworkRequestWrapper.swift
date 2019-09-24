@@ -21,7 +21,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     
     weak var delegate: EKErrorHandleDelegate?
     
-    open init() { }
+    public init() { }
     
     open func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
 
