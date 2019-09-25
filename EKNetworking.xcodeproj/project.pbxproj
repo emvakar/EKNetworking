@@ -17,7 +17,6 @@
 		20709749233B54DA00E2F124 /* EKNetworkTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20709740233B54DA00E2F124 /* EKNetworkTarget.swift */; };
 		2070974A233B54DA00E2F124 /* EKNetworkError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20709742233B54DA00E2F124 /* EKNetworkError.swift */; };
 		2070974B233B54DA00E2F124 /* EKAccountManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20709743233B54DA00E2F124 /* EKAccountManagerProtocol.swift */; };
-		2070974C233B54DA00E2F124 /* EKNetworkRequestProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20709744233B54DA00E2F124 /* EKNetworkRequestProvider.swift */; };
 		2070974F233B54E700E2F124 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2070974D233B54E700E2F124 /* Package.swift */; };
 		20709750233B54E700E2F124 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 2070974E233B54E700E2F124 /* README.md */; };
 		E1BCAEE246006199DDE98D37 /* Pods_EKNetworking.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 806D8DB185C6C98BFB49C13C /* Pods_EKNetworking.framework */; };
@@ -37,7 +36,6 @@
 		20709740233B54DA00E2F124 /* EKNetworkTarget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EKNetworkTarget.swift; sourceTree = "<group>"; };
 		20709742233B54DA00E2F124 /* EKNetworkError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EKNetworkError.swift; sourceTree = "<group>"; };
 		20709743233B54DA00E2F124 /* EKAccountManagerProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EKAccountManagerProtocol.swift; sourceTree = "<group>"; };
-		20709744233B54DA00E2F124 /* EKNetworkRequestProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EKNetworkRequestProvider.swift; sourceTree = "<group>"; };
 		2070974D233B54E700E2F124 /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		2070974E233B54E700E2F124 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		2BDF9D1ACEACEB80B361CF31 /* Pods-EKNetworking.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-EKNetworking.release.xcconfig"; path = "Target Support Files/Pods-EKNetworking/Pods-EKNetworking.release.xcconfig"; sourceTree = "<group>"; };
@@ -103,7 +101,6 @@
 				2070973A233B54DA00E2F124 /* EKNetworkTokenRefresher.swift */,
 				2070973B233B54DA00E2F124 /* NetworkRequestWrapper */,
 				20709743233B54DA00E2F124 /* EKAccountManagerProtocol.swift */,
-				20709744233B54DA00E2F124 /* EKNetworkRequestProvider.swift */,
 			);
 			path = EKNetworking;
 			sourceTree = "<group>";
@@ -276,7 +273,6 @@
 				20709745233B54DA00E2F124 /* Double+Extension.swift in Sources */,
 				20709746233B54DA00E2F124 /* EKNetworkTokenRefresher.swift in Sources */,
 				2070974B233B54DA00E2F124 /* EKAccountManagerProtocol.swift in Sources */,
-				2070974C233B54DA00E2F124 /* EKNetworkRequestProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
