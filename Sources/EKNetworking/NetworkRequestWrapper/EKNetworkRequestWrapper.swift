@@ -19,7 +19,7 @@ public protocol EKErrorHandleDelegate: class {
 
 open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     
-    weak var delegate: EKErrorHandleDelegate?
+    public weak var delegate: EKErrorHandleDelegate?
     
     public init() { }
     
@@ -39,9 +39,6 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                 print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             #endif
             self.delegate?.handle(error: error, statusCode: statusCode)
-//            if statusCode == 500 && (error?.detailMessage ?? "").contains("TestFlight") {
-//                NotificationCenter.default.post(name: .updateNeeded, object: error?.detailMessage, userInfo: nil)
-//            }
             completion(statusCode, data, error)
         })
     }
