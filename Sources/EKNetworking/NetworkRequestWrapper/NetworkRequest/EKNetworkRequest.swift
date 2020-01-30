@@ -9,13 +9,17 @@
 import Foundation
 import Moya
 
-public enum EKRequestHTTPMethod {
-    case get
-    case post
-    case put
-    case patch
-    case delete
-    case multiple
+public enum EKRequestHTTPMethod: String {
+
+    case options = "OPTIONS"
+    case get     = "GET"
+    case head    = "HEAD"
+    case post    = "POST"
+    case put     = "PUT"
+    case patch   = "PATCH"
+    case delete  = "DELETE"
+    case trace   = "TRACE"
+    case connect = "CONNECT"
 }
 
 public protocol EKNetworkRequest {

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		205D4C032364CD1700A73CD3 /* EKTargetType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 205D4C022364CD1700A73CD3 /* EKTargetType.swift */; };
+		205D4C052364CDDB00A73CD3 /* EKValidationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 205D4C042364CDDB00A73CD3 /* EKValidationType.swift */; };
+		205D4C072364CE8100A73CD3 /* EKNetworkingProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 205D4C062364CE8100A73CD3 /* EKNetworkingProvider.swift */; };
 		2070972D233B53C900E2F124 /* EKNetworking.h in Headers */ = {isa = PBXBuildFile; fileRef = 2070972B233B53C900E2F124 /* EKNetworking.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		20709735233B54C700E2F124 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 20709733233B54C700E2F124 /* .gitignore */; };
 		20709736233B54C700E2F124 /* .swiftlint.yml in Resources */ = {isa = PBXBuildFile; fileRef = 20709734233B54C700E2F124 /* .swiftlint.yml */; };
@@ -24,6 +27,9 @@
 
 /* Begin PBXFileReference section */
 		16E3AD1E4C44A3B0B8C3B454 /* Pods-EKNetworking.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-EKNetworking.debug.xcconfig"; path = "Target Support Files/Pods-EKNetworking/Pods-EKNetworking.debug.xcconfig"; sourceTree = "<group>"; };
+		205D4C022364CD1700A73CD3 /* EKTargetType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EKTargetType.swift; sourceTree = "<group>"; };
+		205D4C042364CDDB00A73CD3 /* EKValidationType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EKValidationType.swift; sourceTree = "<group>"; };
+		205D4C062364CE8100A73CD3 /* EKNetworkingProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EKNetworkingProvider.swift; sourceTree = "<group>"; };
 		20709728233B53C900E2F124 /* EKNetworking.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = EKNetworking.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2070972B233B53C900E2F124 /* EKNetworking.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EKNetworking.h; sourceTree = "<group>"; };
 		2070972C233B53C900E2F124 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -110,6 +116,7 @@
 			children = (
 				2070973C233B54DA00E2F124 /* NetworkRequest */,
 				2070973E233B54DA00E2F124 /* EKNetworkRequestWrapper.swift */,
+				205D4C062364CE8100A73CD3 /* EKNetworkingProvider.swift */,
 				2070973F233B54DA00E2F124 /* NetworkTarget */,
 				20709741233B54DA00E2F124 /* NetworkError */,
 			);
@@ -120,6 +127,8 @@
 			isa = PBXGroup;
 			children = (
 				2070973D233B54DA00E2F124 /* EKNetworkRequest.swift */,
+				205D4C022364CD1700A73CD3 /* EKTargetType.swift */,
+				205D4C042364CDDB00A73CD3 /* EKValidationType.swift */,
 			);
 			path = NetworkRequest;
 			sourceTree = "<group>";
@@ -269,10 +278,13 @@
 				20709748233B54DA00E2F124 /* EKNetworkRequestWrapper.swift in Sources */,
 				20709747233B54DA00E2F124 /* EKNetworkRequest.swift in Sources */,
 				2070974F233B54E700E2F124 /* Package.swift in Sources */,
+				205D4C052364CDDB00A73CD3 /* EKValidationType.swift in Sources */,
 				2070974A233B54DA00E2F124 /* EKNetworkError.swift in Sources */,
 				20709745233B54DA00E2F124 /* Double+Extension.swift in Sources */,
 				20709746233B54DA00E2F124 /* EKNetworkTokenRefresher.swift in Sources */,
+				205D4C072364CE8100A73CD3 /* EKNetworkingProvider.swift in Sources */,
 				2070974B233B54DA00E2F124 /* EKAccountManagerProtocol.swift in Sources */,
+				205D4C032364CD1700A73CD3 /* EKTargetType.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -47,7 +47,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
         let requestStartTime = DispatchTime.now()
 
-        let provider = MoyaProvider<EKNetworkTarget>()
+        let provider = EKNetworkingProvider<EKNetworkTarget>()
         provider.request(target, progress: { (progressResponse) in
 
             let progress = progressResponse.progress

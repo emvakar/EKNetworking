@@ -23,16 +23,10 @@ public enum EKHeadersKey: String {
     case api = "API"
 }
 
-public struct EKNetworkTarget: TargetType {
+public struct EKNetworkTarget: EKTargetType {
 
     let apiRequest: EKNetworkRequest
     let authToken: String?
-
-    public init(request: EKNetworkRequest, token: String?, baseURL: String) {
-        self.apiRequest = request
-        self.authToken = token
-        self.baseURL = URL(string: baseURL)!
-    }
 
     public var baseURL: URL
 
@@ -84,4 +78,12 @@ public struct EKNetworkTarget: TargetType {
         }
         return dictionary
     }
+    
+    
+    public init(request: EKNetworkRequest, token: String?, baseURL: String) {
+        self.apiRequest = request
+        self.authToken = token
+        self.baseURL = URL(string: baseURL)!
+    }
+
 }
