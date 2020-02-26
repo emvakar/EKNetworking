@@ -13,14 +13,16 @@ public enum EKHeadersKey: String {
     
     case content_type = "Content-Type"
     case accept_language = "Accept-Language"
-    case ios = "iOS"
-    case device = "Device"
-    case head = "Head"
-    case date = "Date"
+    case os = "os"
+    case osVersion = "os_version"
+    case device = "model"
+    case head = "head"
+    case date = "date"
     case authorization = "Authorization"
     case deviceUUID = "deviceUUID"
-    case build = "Build"
-    case api = "API"
+    case app_version = "app_version"
+    case app_build = "app_build"
+    case api = "api"
 }
 
 public struct EKNetworkTarget: TargetType {
