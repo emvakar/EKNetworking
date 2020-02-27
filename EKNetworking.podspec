@@ -27,4 +27,7 @@ Pod::Spec.new do |s|
     
     # 8
     s.source_files = "Sources/EKNetworking/**/*.{swift}"
+
+    # 9
+    s.swift_versions = "5.1"
 end
