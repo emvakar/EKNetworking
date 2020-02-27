@@ -19,10 +19,11 @@ public enum EKHeadersKey: String {
     case head = "head"
     case date = "date"
     case authorization = "Authorization"
-    case deviceUUID = "deviceUUID"
+    case deviceUUID = "device"
     case app_version = "app_version"
     case app_build = "app_build"
     case api = "api"
+    case fcm = "fcm"
 }
 
 public struct EKNetworkTarget: TargetType {
