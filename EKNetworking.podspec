@@ -27,10 +27,4 @@ Pod::Spec.new do |s|
     
     # 8
     s.source_files = "Sources/EKNetworking/**/*.{swift}"
-    
-    # 9
-    s.resources = "Sources/EKNetworking/**/*.{png,jpeg,jpg,storyboard,xib}"
-    s.resource_bundles = {
-        'EKNetworkingAssets' => ['Sources/EKNetworking/**/*.xcassets']
-    }
 end
