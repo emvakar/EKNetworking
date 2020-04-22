@@ -10,17 +10,20 @@ import Moya
 import Foundation
 
 public enum EKHeadersKey: String {
-    
+
     case content_type = "Content-Type"
     case accept_language = "Accept-Language"
-    case ios = "iOS"
-    case device = "Device"
-    case head = "Head"
-    case date = "Date"
+    case os = "os"
+    case osVersion = "os_version"
+    case device = "model"
+    case head = "head"
+    case date = "date"
     case authorization = "Authorization"
-    case deviceUUID = "deviceUUID"
-    case build = "Build"
-    case api = "API"
+    case deviceUUID = "device"
+    case app_version = "app_version"
+    case app_build = "app_build"
+    case api = "api"
+    case fcm = "fcm"
 }
 
 public struct EKNetworkTarget: TargetType {
@@ -63,22 +66,24 @@ public struct EKNetworkTarget: TargetType {
     public var task: Task {
         switch apiRequest.method {
         case .get:
-            return apiRequest.urlParameters.count == 0 ? .requestPlain : .requestParameters(parameters: apiRequest.urlParameters, encoding: URLEncoding.default)
+            guard let urlParameters = apiRequest.urlParameters else {
+                return .requestPlain
+            }
+            return urlParameters.count == 0 ? .requestPlain : .requestParameters(parameters: urlParameters, encoding: URLEncoding.default)
         case .post, .multiple, .put, .delete, .patch:
             if let multipart = apiRequest.multipartBody {
-                return .uploadCompositeMultipart(multipart, urlParameters: apiRequest.urlParameters)
+                return .uploadCompositeMultipart(multipart, urlParameters: apiRequest.urlParameters ?? [:])
             }
-            return .requestCompositeParameters(bodyParameters: apiRequest.bodyParameters, bodyEncoding: JSONEncoding.default, urlParameters: apiRequest.urlParameters)
+            return .requestCompositeParameters(bodyParameters: (apiRequest.bodyParameters ?? [:]), bodyEncoding: JSONEncoding.default, urlParameters: apiRequest.urlParameters ?? [:])
         }
     }
 
     public var headers: [String: String]? {
-        
+
         var dictionary = [String: String]()
-        self.apiRequest.headers.forEach {
-            dictionary.updateValue($0.value, forKey: $0.key.rawValue)
+        if let value = self.apiRequest.headers {
+            value.forEach { dictionary.updateValue($0.value, forKey: $0.key.rawValue) }
         }
-        
         if let value = authToken {
             dictionary.updateValue(value, forKey: EKHeadersKey.authorization.rawValue)
         }

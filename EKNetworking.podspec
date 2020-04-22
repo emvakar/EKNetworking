@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
     s.requires_arc = true
     
     # 2
-    s.version = "1.0.0"
+    s.version = "1.0.1"
     
     # 3
     s.license = { :type => "MIT", :file => "LICENSE" }
@@ -27,10 +27,7 @@ Pod::Spec.new do |s|
     
     # 8
     s.source_files = "Sources/EKNetworking/**/*.{swift}"
-    
+
     # 9
-    s.resources = "Sources/EKNetworking/**/*.{png,jpeg,jpg,storyboard,xib}"
-    s.resource_bundles = {
-        'EKNetworkingAssets' => ['Sources/EKNetworking/**/*.xcassets']
-    }
+    s.swift_versions = "5.1"
 end

@@ -19,6 +19,7 @@ public protocol EKErrorHandleDelegate: class {
 
 open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     
+    /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
     
     public init() { }
