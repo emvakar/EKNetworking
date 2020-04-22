@@ -10,7 +10,7 @@ import Moya
 import Foundation
 
 public enum EKHeadersKey: String {
-    
+
     case content_type = "Content-Type"
     case accept_language = "Accept-Language"
     case os = "os"
@@ -66,22 +66,24 @@ public struct EKNetworkTarget: TargetType {
     public var task: Task {
         switch apiRequest.method {
         case .get:
-            return apiRequest.urlParameters.count == 0 ? .requestPlain : .requestParameters(parameters: apiRequest.urlParameters, encoding: URLEncoding.default)
+            guard let urlParameters = apiRequest.urlParameters else {
+                return .requestPlain
+            }
+            return urlParameters.count == 0 ? .requestPlain : .requestParameters(parameters: urlParameters, encoding: URLEncoding.default)
         case .post, .multiple, .put, .delete, .patch:
             if let multipart = apiRequest.multipartBody {
-                return .uploadCompositeMultipart(multipart, urlParameters: apiRequest.urlParameters)
+                return .uploadCompositeMultipart(multipart, urlParameters: apiRequest.urlParameters ?? [:])
             }
-            return .requestCompositeParameters(bodyParameters: apiRequest.bodyParameters, bodyEncoding: JSONEncoding.default, urlParameters: apiRequest.urlParameters)
+            return .requestCompositeParameters(bodyParameters: (apiRequest.bodyParameters ?? [:]), bodyEncoding: JSONEncoding.default, urlParameters: apiRequest.urlParameters ?? [:])
         }
     }
 
     public var headers: [String: String]? {
-        
+
         var dictionary = [String: String]()
-        self.apiRequest.headers.forEach {
-            dictionary.updateValue($0.value, forKey: $0.key.rawValue)
+        if let value = self.apiRequest.headers {
+            value.forEach { dictionary.updateValue($0.value, forKey: $0.key.rawValue) }
         }
-        
         if let value = authToken {
             dictionary.updateValue(value, forKey: EKHeadersKey.authorization.rawValue)
         }
