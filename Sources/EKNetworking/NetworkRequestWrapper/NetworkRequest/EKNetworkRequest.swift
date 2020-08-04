@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import Moya
 
 public enum EKRequestHTTPMethod {
     case get
@@ -23,6 +22,6 @@ public protocol EKNetworkRequest {
     var method: EKRequestHTTPMethod { get }
     var urlParameters: [String: Any]? { get }
     var bodyParameters: [String: Any]? { get }
-    var multipartBody: [MultipartFormData]? { get }
+    var multipartBody: [EKMultipartFormData]? { get }
     var headers: [EKHeadersKey: String]? { get }
 }
