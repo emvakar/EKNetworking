@@ -25,12 +25,4 @@ public protocol EKNetworkRequest {
     var bodyParameters: [String: Any]? { get }
     var multipartBody: [MultipartFormData]? { get }
     var headers: [EKHeadersKey: String]? { get }
-
-}
-
-public extension EKNetworkRequest {
-    var urlParameters: [String: Any]? { return nil }
-    var bodyParameters: [String: Any]? { return nil }
-    var multipartBody: [MultipartFormData]? { return nil }
-    var headers: [EKHeadersKey: String]? { return nil }
 }

@@ -68,10 +68,10 @@ playground.xcworkspace
 Podfile.lock
 
 # Swift Package Manager
-#
+.swiftpm
 # Add this line if you want to avoid checking in source code from Swift Package Manager dependencies.
-# Packages/
-# Package.pins
+Packages/
+Package.pins
 .build/
 
 # CocoaPods - Refactored to standalone file
