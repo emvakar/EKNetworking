@@ -10,7 +10,7 @@ let package = Package(name: "EKNetworking", platforms: [.iOS(.v10)],
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-         .package(url: "https://github.com/Moya/Moya.git", from: "13.0.0"),
+         .package(url: "https://github.com/Moya/Moya.git", from: "14.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
