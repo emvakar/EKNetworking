@@ -1,9 +1,9 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
-let package = Package(name: "EKNetworking", platforms: [.iOS(.v10)],
+let package = Package(name: "EKNetworking", platforms: [.iOS(.v10),.macOS(.v10_12)],
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(name: "EKNetworking", targets: ["EKNetworking"]),
