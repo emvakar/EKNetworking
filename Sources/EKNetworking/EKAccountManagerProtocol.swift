@@ -8,12 +8,19 @@
 
 import Foundation
 
-public protocol EKAccountManagerProtocol {
+public protocol EKAccountWriteProtocol {
+    
+    func set(token: String?)
+    func set(refresh token: String?)
+    func logOut()
+    
+}
+
+public protocol EKAccountReadProtocol {
+    
     func getBaseUrl() -> String
     func getMediaBaseUrl() -> String
-    func getUserToken() -> String
-    func setUserToken(newToken: String)
-    func logOut()
-    //func getRefreshToken() -> String
-    //func setRefreshToken(newToken: String)
+    func getToken() -> String?
+    func getRefreshToken() -> String?
+
 }

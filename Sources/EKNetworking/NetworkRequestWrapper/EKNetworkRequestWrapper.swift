@@ -10,11 +10,15 @@ import Foundation
 import Moya
 
 public protocol EKNetworkRequestWrapperProtocol {
-    func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void)
+    
+    func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: () -> String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void)
+    
 }
 
-public protocol EKErrorHandleDelegate: class {
+public protocol EKErrorHandleDelegate: AnyObject {
+    
     func handle(error: EKNetworkError?, statusCode: Int)
+    
 }
 
 open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
@@ -24,62 +28,65 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     
     public init() { }
     
-    open func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
-
+    open func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: () -> String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
+        
         let target = EKNetworkTarget(request: request, token: authToken, baseURL: baseURL)
-
+        
         self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, data, error) in
             #if DEBUG
-                let body: String? = data != nil ? String.init(data: data!, encoding: .utf8) : ""
-                print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                print("Request status code: \(statusCode)")
-                print("Request url: \(baseURL + target.path)")
-                print("Request headers: \(target.headers ?? [:])")
-                print("Request body: \(String(describing: body))")
-                print("Request error code \(String(describing: error?.errorCode)) body: \(String(describing: error?.plainBody))")
-                print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            let body: String? = data != nil ? String.init(data: data!, encoding: .utf8) : ""
+            ekNetworkLog(Self.self, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            ekNetworkLog(Self.self, "Request status code: \(statusCode)")
+            ekNetworkLog(Self.self, "Request url: \(baseURL + target.path)")
+            ekNetworkLog(Self.self, "Request headers: \(target.headers ?? [:])")
+            ekNetworkLog(Self.self, "Request body: \(String(describing: body))")
+            if let code = error?.errorCode, let plainBody = error?.plainBody {
+                
+                ekNetworkLog(Self.self, "Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
+            }
+            ekNetworkLog(Self.self, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             #endif
             self.delegate?.handle(error: error, statusCode: statusCode)
             completion(statusCode, data, error)
         })
     }
-
+    
     private func runWith(target: EKNetworkTarget, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ responseData: Data?, _ error: EKNetworkError?) -> Void) {
-
+        
         let requestStartTime = DispatchTime.now()
-
+        
         let provider = MoyaProvider<EKNetworkTarget>()
         provider.request(target, progress: { (progressResponse) in
-
+            
             let progress = progressResponse.progress
             progressResult?(progress)
-
+            
         }) { (resultResponse) in
-
+            
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
-            print("Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(6)) секунд")
-
+            ekNetworkLog(Self.self, "Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) секунд")
+            
             switch resultResponse {
-
-            case .success(let response):
-
-                if 200...299 ~= response.statusCode {
-                    completion(response.statusCode, response.data, nil)
-                } else {
-                    let networkError = EKNetworkErrorStruct(statusCode: response.statusCode, data: response.data)
-                    completion(response.statusCode, nil, networkError)
-                }
-
+                
+                case .success(let response):
+                    
+                    if 200...299 ~= response.statusCode {
+                        completion(response.statusCode, response.data, nil)
+                    } else {
+                        let networkError = EKNetworkErrorStruct(statusCode: response.statusCode, data: response.data)
+                        completion(response.statusCode, nil, networkError)
+                    }
+                    
                 //если отправка не прошла на нашей стороне
-            case .failure(let error):
-                switch error {
-                case .underlying(let nsError as NSError, let response):
-                    let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: response?.data)
-                    completion(nsError.code, nil, networkError)
-                default:
-                    break
-                }
+                case .failure(let error):
+                    switch error {
+                        case .underlying(let nsError as NSError, let response):
+                            let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: response?.data)
+                            completion(nsError.code, nil, networkError)
+                        default:
+                            break
+                    }
             }
         }
     }
