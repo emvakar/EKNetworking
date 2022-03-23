@@ -33,9 +33,13 @@ public struct EKNetworkTarget: TargetType {
     let apiRequest: EKNetworkRequest
     let authToken: String?
     
-    public init(request: EKNetworkRequest, token: String?, baseURL: String) {
+    public init(request: EKNetworkRequest, token: () -> String?, baseURL: String) {
         apiRequest = request
-        authToken = token
+        if let token = token() {
+            authToken = "Bearer " + token
+        } else {
+            authToken = nil
+        }
         self.baseURL = URL(string: baseURL)!
     }
     
