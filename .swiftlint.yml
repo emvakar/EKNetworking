@@ -1,13 +1,103 @@
-disabled_rules:
-  - line_length
-  - type_name
+included:
+  - Sources
+  - Sources/EKNetworking
+
+excluded:
+  - build
+  - DerivedData
+  - fastlane
+
+disabled_rules: # rule identifiers to exclude from running
+  - identifier_name
+  - multiple_closures_with_trailing_closure
+  - trailing_comma
+  - object_literal
+  - missing_docs
+  - function_parameter_count
+  - unused_closure_parameter
 
 opt_in_rules:
   - empty_count
+  - explicit_init
+  - closure_spacing
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - private_outlet
+  - nimble_operator
+  - attributes
+  - operator_usage_whitespace
+  - closure_end_indentation
+  - first_where
+  - number_separator
+  - prohibited_super_call
+  - fatal_error_message
   - force_unwrapping
+  - print_using
+#  - file_header
+  - mark_newlines
 
-included:
-  - Sources
+line_length: # Максимально допустимая длина строк
+  warning: 250 # по дефолту 120
+  error: 400 # по дефолту 200
+  ignores_comments: true
+  ignores_urls: true
+  ignores_interpolated_strings: true
+  ignores_function_declarations: true
 
-function_body_length:
-warning: 20
+#missing_docs:
+#    warning: open, public
+#    excludes_extensions: true
+#    excludes_inherited_types: true
+
+file_length:
+    warning: 500
+    error: 650
+
+force_cast: error
+
+force_try: error
+
+force_unwrapping: error
+
+cyclomatic_complexity: 20
+
+warning_threshold: 5 # Максимально допустимое количество предупреждений
+
+function_body_length: # Максимально допустимая длина метода
+    warning: 120 # по дефолту 120
+    error: 200 # по дефолту 200
+
+large_tuple: # Максимальное количество элементов в кортеже
+    warning: 3 # по дефолту 120
+    error: 5 # по дефолту 200
+
+#function_parameter_count: # Максимально допустимое количество параметров
+#    warning: 10 # по дефолту 120
+#    error: 15 # по дефолту 200
+#    ignores_default_parameters: true
+
+custom_rules:
+
+#    file_header:
+#        included: ".*.swift"
+#        regex: 'File\.*'
+#        message: "Не забываем переименовывать файлы"
+#        severity: error
+
+    print_using:
+        regex: 'print\('
+        message: "Используем printLog(AnyObject, Any), он в прод сборке не будет отрабатывать"
+        severity: error
+
+    mark_newlines:
+        included: ".*.swift"
+        name: "MARK должен быть окружен отступами"
+        regex: '(([}{)\w \t]+\n{1}[ \t]*)(\/\/ MARK: - [\w ]*))|((\/\/ MARK: - [\w ]*)(\n{1}[ \t]*\w+))'
+        message: "Каждый MARK должен быть окружен пустой строкой сверху и снизу"
+        severity: warning
+
+    empty_line_after_super: # from https://github.com/brandenr/swiftlintconfig
+        name: "Empty Line After Super"
+        regex: '(^ *super\.[ a-zA-Z0-9=?.\(\)\{\}:,><!]*\n *(?!(?:\}|return))\S+)'
+        message: "There should be an empty line after super"
+        severity: error

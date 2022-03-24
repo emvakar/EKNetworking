@@ -10,7 +10,7 @@ import Moya
 import Foundation
 
 public enum EKHeadersKey: String {
-    
+
     case content_type = "Content-Type"
     case accept_language = "Accept-Language"
     case os = "os"
@@ -25,83 +25,75 @@ public enum EKHeadersKey: String {
     case device_uuid = "device_uuid"
     case api = "api"
     case fcm = "fcm"
-    
+
 }
 
-public struct EKNetworkTarget: TargetType {
-    
+struct EKNetworkTarget: TargetType {
+
     let apiRequest: EKNetworkRequest
-    let authToken: String?
-    
-    public init(request: EKNetworkRequest, token: () -> String?, baseURL: String) {
+    let tokenFunction: (() -> String?)?
+
+    init(request: EKNetworkRequest, tokenFunction: (() -> String?)?, baseURL: String) {
         apiRequest = request
-        if let token = token() {
-            authToken = "Bearer " + token
-        } else {
-            authToken = nil
-        }
-        self.baseURL = URL(string: baseURL)!
+        self.tokenFunction = tokenFunction
+        self.baseURL = URL(string: baseURL)! // swiftlint:disable:this force_unwrapping
     }
-    
-    public var baseURL: URL
-    
+
+    var baseURL: URL
+
     /// URL path
-    public var path: String {
+    var path: String {
         return apiRequest.path
     }
-    
+
     ///  Method
-    public var method: Moya.Method {
+    var method: Moya.Method {
         switch apiRequest.method {
-            case .get:
-                return .get
-            case .post, .multiple:
-                return .post
-            case .put:
-                return .put
-            case .delete:
-                return .delete
-            case .patch:
-                return .patch
-            case .options:
-                return .options
-            case .head:
-                return .head
-            case .trace:
-                return .trace
-            case .connect:
-                return .connect
+        case .get:       return .get
+        case .post:      return .post
+        case .multiple:  return .post
+        case .put:       return .put
+        case .delete:    return .delete
+        case .patch:     return .patch
+        case .options:   return .options
+        case .head:      return .head
+        case .trace:     return .trace
+        case .connect:   return .connect
         }
     }
-    
+
     /// для мок реализации запроса в юнит тестах (если потребуется, то поменять)
-    public var sampleData: Data {
+    var sampleData: Data {
         return Data()
     }
-    
-    public var task: Task {
+
+    var task: Task {
         switch apiRequest.method {
-            case .get:
-                guard let urlParameters = apiRequest.urlParameters else {
-                    return .requestPlain
-                }
-                return urlParameters.count == 0 ? .requestPlain : .requestParameters(parameters: urlParameters, encoding: URLEncoding.default)
-            case .post, .multiple, .put, .delete, .patch, .options, .head, .trace, .connect:
-                if let multipart = apiRequest.multipartBody {
-                    return .uploadCompositeMultipart(multipart, urlParameters: apiRequest.urlParameters ?? [:])
-                }
-                return .requestCompositeParameters(bodyParameters: (apiRequest.bodyParameters ?? [:]), bodyEncoding: JSONEncoding.default, urlParameters: apiRequest.urlParameters ?? [:])
+        case .get:
+            guard let urlParameters = apiRequest.urlParameters else {
+                return .requestPlain
+            }
+            return urlParameters.isEmpty ? .requestPlain : .requestParameters(parameters: urlParameters, encoding: URLEncoding.default)
+        case .post, .multiple, .put, .delete, .patch, .options, .head, .trace, .connect:
+            if let multipart = apiRequest.multipartBody {
+                return .uploadCompositeMultipart(multipart,
+                                                 urlParameters: apiRequest.urlParameters ?? [:])
+            }
+            return .requestCompositeParameters(bodyParameters: (apiRequest.bodyParameters ?? [:]),
+                                               bodyEncoding: JSONEncoding.default,
+                                               urlParameters: apiRequest.urlParameters ?? [:])
         }
     }
-    
-    public var headers: [String: String]? {
-        
+
+    var headers: [String: String]? {
+
         var dictionary = [String: String]()
         if let value = apiRequest.headers {
-            value.forEach { dictionary.updateValue($0.value, forKey: $0.key.rawValue) }
+            value.forEach { dictionary.updateValue($0.value, forKey: $0.key) }
         }
-        if let value = authToken {
-            dictionary.updateValue(value, forKey: EKHeadersKey.authorization.rawValue)
+        if let authFunc = tokenFunction, let value = authFunc() {
+            let token = "Bearer " + value
+            dictionary.updateValue(token, forKey: EKHeadersKey.authorization.rawValue)
         }
         return dictionary
     }

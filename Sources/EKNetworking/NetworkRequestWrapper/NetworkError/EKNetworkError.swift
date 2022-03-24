@@ -9,6 +9,7 @@
 import Foundation
 
 public enum EKNetworkErrorType: Equatable {
+
     case noConnection
     case lostConnection
     case unauthorized
@@ -19,9 +20,11 @@ public enum EKNetworkErrorType: Equatable {
     case notFound
     case forbidden
     case unspecified(statusCode: Int)
+
 }
 
 public protocol EKNetworkError: Error {
+
     var statusCode: Int { get }
     var type: EKNetworkErrorType { get }
     var errorCode: Int? { get }
@@ -29,6 +32,8 @@ public protocol EKNetworkError: Error {
     var message: String? { get }
     var plainBody: String? { get }
     var detailMessage: String? { get }
+    var data: Data? { get set }
+
 }
 
 public struct EKNetworkErrorStruct: EKNetworkError {
@@ -40,7 +45,8 @@ public struct EKNetworkErrorStruct: EKNetworkError {
     public var message: String?
     public var plainBody: String?
     public var detailMessage: String?
-    public var userInfo: [String: Any]? //полезно при ошибке JSONDecoder (если неверны ключи), вытащить можно только из NSError
+    public var userInfo: [String: Any]? // полезно при ошибке JSONDecoder (если неверны ключи), вытащить можно только из NSError
+    public var data: Data?
 
     public init(statusCode: Int?, data: Data?) {
         guard let statusCode = statusCode else {
@@ -89,7 +95,7 @@ public struct EKNetworkErrorStruct: EKNetworkError {
             return
         }
 
-        self.plainBody = String.init(data: data, encoding: .utf8)
+        self.plainBody = String(data: data, encoding: .utf8)
 
         do {
             let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
@@ -98,7 +104,7 @@ public struct EKNetworkErrorStruct: EKNetworkError {
             self.description = json?["reason"] as? String
             self.message = json?["reason"] as? String
             self.detailMessage = json?["reason"] as? String
-
+            self.userInfo = json
         } catch let error {
             ekNetworkLog(EKNetworkRequestWrapper.self, "Can't parse network error body: \(error)")
         }
