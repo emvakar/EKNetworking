@@ -10,6 +10,7 @@ import Foundation
 
 public protocol EKAccountWriteProtocol {
 
+    func set(baseUrl: String)
     func set(token: String?)
     func set(refresh token: String?)
     func logOut()
@@ -23,4 +24,10 @@ public protocol EKAccountReadProtocol {
     func getToken() -> String?
     func getRefreshToken() -> String?
 
+}
+
+extension EKAccountWriteProtocol {
+    
+    func set(baseUrl: String) { }
+    
 }
