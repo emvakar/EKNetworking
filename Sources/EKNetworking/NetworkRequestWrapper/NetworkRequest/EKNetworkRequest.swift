@@ -31,5 +31,6 @@ public protocol EKNetworkRequest {
     var bodyParameters: [String: Any]? { get }
     var multipartBody: [EKMultipartFormData]? { get }
     var headers: [String: String]? { get }
-
+    var authHeader: AuthHeader { get }
+    
 }

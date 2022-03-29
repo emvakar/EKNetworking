@@ -18,6 +18,7 @@ public enum EKHeadersKey: String {
     case head = "head"
     case date = "date"
     case authorization = "Authorization"
+    case sessionToken = "Session-Token"
     case app_version = "app_version"
     case app_build = "app_build"
     case app_identifier = "app_identifier"
@@ -91,10 +92,17 @@ struct EKNetworkTarget: TargetType {
         if let value = apiRequest.headers {
             value.forEach { dictionary.updateValue($0.value, forKey: $0.key) }
         }
-        if let authFunc = tokenFunction, let value = authFunc() {
+
+        guard let authFunc = tokenFunction, let value = authFunc() else { return dictionary }
+        
+        switch apiRequest.authHeader {
+        case .bearerToken:
             let token = "Bearer " + value
             dictionary.updateValue(token, forKey: EKHeadersKey.authorization.rawValue)
+        case .sessionToken:
+            dictionary.updateValue(value, forKey: EKHeadersKey.sessionToken.rawValue)
         }
+        
         return dictionary
     }
 }

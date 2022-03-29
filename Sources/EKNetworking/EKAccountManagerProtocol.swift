@@ -8,6 +8,11 @@
 
 import Foundation
 
+public enum AuthHeader: String, CaseIterable {
+    case bearerToken = "Authorization"
+    case sessionToken = "Session-Token"
+}
+
 public protocol EKAccountWriteProtocol {
 
     func set(baseUrl: String)
