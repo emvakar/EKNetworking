@@ -28,17 +28,10 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
 
-    public init() {
-        let factory: (String) -> LogHandler = { label in
-            MultiplexLogHandler([
-                ConsoleLogHandler.standardOutput(label: label),
-            ])
+    public init(logging: Logger? = nil) {
+        if let logging = logging {
+            logger = logging
         }
-        LoggingSystem.bootstrap(factory)
-        
-        #if DEBUG
-        logger.logLevel = .debug
-        #endif
     }
 
     open func runRequest(request: EKNetworkRequest, baseURL: String, authToken: (() -> String?)?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
@@ -47,7 +40,6 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
         self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, data, error) in
             #if DEBUG
-            logger.logLevel = .debug
             let body: String? = data != nil ? String(data: data!, encoding: .utf8) : "" // swiftlint:disable:this force_unwrapping
             logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             logger.debug("Request status code: \(statusCode)")
