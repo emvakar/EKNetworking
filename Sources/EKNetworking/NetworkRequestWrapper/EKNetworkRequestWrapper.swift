@@ -8,6 +8,8 @@
 
 import Foundation
 import Moya
+import Logging
+import LoggingTelegram
 
 public protocol EKNetworkRequestWrapperProtocol {
 
@@ -26,7 +28,14 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
 
-    public init() { }
+    public init() {
+        let factory: (String) -> LogHandler = { label in
+            MultiplexLogHandler([
+                ConsoleLogHandler.standardOutput(label: label),
+            ])
+        }
+        LoggingSystem.bootstrap(factory)
+    }
 
     open func runRequest(request: EKNetworkRequest, baseURL: String, authToken: (() -> String?)?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
 
