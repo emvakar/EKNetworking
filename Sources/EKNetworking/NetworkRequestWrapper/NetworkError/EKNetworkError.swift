@@ -106,7 +106,7 @@ public struct EKNetworkErrorStruct: EKNetworkError {
             self.detailMessage = json?["reason"] as? String
             self.userInfo = json
         } catch let error {
-            ekNetworkLog(EKNetworkRequestWrapper.self, "Can't parse network error body: \(error)")
+            logger.debug("Can't parse network error body: \(error)")
         }
     }
 }

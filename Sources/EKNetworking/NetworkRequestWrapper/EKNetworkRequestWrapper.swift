@@ -35,16 +35,15 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, data, error) in
             #if DEBUG
             let body: String? = data != nil ? String(data: data!, encoding: .utf8) : "" // swiftlint:disable:this force_unwrapping
-            ekNetworkLog(Self.self, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            ekNetworkLog(Self.self, "Request status code: \(statusCode)")
-            ekNetworkLog(Self.self, "Request url: \(baseURL + target.path)")
-            ekNetworkLog(Self.self, "Request headers: \(target.headers ?? [:])")
-            ekNetworkLog(Self.self, "Request body: \(String(describing: body))")
+            logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            logger.debug("Request status code: \(statusCode)")
+            logger.debug("Request url: \(baseURL + target.path)")
+            logger.debug("Request headers: \(target.headers ?? [:])")
+            logger.debug("Request body: \(String(describing: body))")
             if let code = error?.errorCode, let plainBody = error?.plainBody {
-
-                ekNetworkLog(Self.self, "Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
+                logger.debug("Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
             }
-            ekNetworkLog(Self.self, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             #endif
             self.delegate?.handle(error: error, statusCode: statusCode)
             completion(statusCode, data, error)
@@ -65,7 +64,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
-            ekNetworkLog(Self.self, "Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) секунд")
+            logger.debug("Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) секунд")
 
             switch resultResponse {
 
