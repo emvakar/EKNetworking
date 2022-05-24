@@ -13,7 +13,13 @@ import LoggingTelegram
 
 public protocol EKNetworkRequestWrapperProtocol {
 
-    func runRequest(request: EKNetworkRequest, baseURL: String, authToken: (() -> String?)?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void)
+    func runRequest(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)?,
+        progressResult: ((Double) -> Void)?,
+        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
+    )
 
 }
 
@@ -34,13 +40,19 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         }
     }
 
-    open func runRequest(request: EKNetworkRequest, baseURL: String, authToken: (() -> String?)?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
+    open func runRequest(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)?,
+        progressResult: ((Double) -> Void)?,
+        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
+    ) {
 
         let target = EKNetworkTarget(request: request, tokenFunction: authToken, baseURL: baseURL)
 
-        self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, data, error) in
+        self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, response, error) in
             #if DEBUG
-            let body: String? = data != nil ? String(data: data!, encoding: .utf8) : "" // swiftlint:disable:this force_unwrapping
+            let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
             logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             logger.debug("Request status code: \(statusCode)")
             logger.debug("Request url: \(baseURL + target.path)")
@@ -52,11 +64,11 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             #endif
             self.delegate?.handle(error: error, statusCode: statusCode)
-            completion(statusCode, data, error)
+            completion(statusCode, response, error)
         })
     }
 
-    private func runWith(target: EKNetworkTarget, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ responseData: Data?, _ error: EKNetworkError?) -> Void) {
+    private func runWith(target: EKNetworkTarget, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
         let requestStartTime = DispatchTime.now()
 
@@ -77,7 +89,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             case .success(let response):
 
                 if 200...299 ~= response.statusCode {
-                    completion(response.statusCode, response.data, nil)
+                    completion(response.statusCode, response, nil)
                 } else {
                     let networkError = EKNetworkErrorStruct(statusCode: response.statusCode, data: response.data)
                     completion(response.statusCode, nil, networkError)

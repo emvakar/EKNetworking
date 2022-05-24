@@ -9,3 +9,4 @@
 import Moya
 
 public typealias EKMultipartFormData = MultipartFormData
+public typealias EKResponse = Response
