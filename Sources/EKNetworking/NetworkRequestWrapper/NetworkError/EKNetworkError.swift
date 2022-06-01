@@ -83,6 +83,9 @@ public struct EKNetworkErrorStruct: EKNetworkError {
             networkErrorType = .forbidden
         case 500...599:
             networkErrorType = .internalServerError
+        /// Alamofire конвертирует коды отсутствия интерента в свои https://github.com/Alamofire/Alamofire/issues/3470
+        case 13:
+            networkErrorType = .noConnection
         default:
             networkErrorType = .unspecified(statusCode: statusCode)
         }
