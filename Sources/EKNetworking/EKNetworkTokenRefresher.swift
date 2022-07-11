@@ -17,3 +17,10 @@ public protocol EKNetworkTokenRefresherProtocol {
     func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void)
 
 }
+
+public extension EKNetworkTokenRefresherProtocol {
+
+    // Дефолтная реализация обновление токена ДСС
+    func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void) { completion(nil) }
+
+}

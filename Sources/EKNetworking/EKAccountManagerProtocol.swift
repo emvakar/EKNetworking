@@ -32,8 +32,14 @@ public protocol EKAccountReadProtocol {
 
 }
 
-extension EKAccountWriteProtocol {
-    
+public extension EKAccountWriteProtocol {
+
     func set(baseUrl: String) { }
-    
+
+}
+
+public extension EKAccountReadProtocol {
+
+    func getAuthType() -> Any? { nil }
+
 }
