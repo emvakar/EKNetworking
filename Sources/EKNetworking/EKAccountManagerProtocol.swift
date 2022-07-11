@@ -28,6 +28,7 @@ public protocol EKAccountReadProtocol {
     func getMediaBaseUrl() -> String
     func getToken() -> String?
     func getRefreshToken() -> String?
+    func getAuthType() -> String?
 
 }
 
