@@ -28,11 +28,18 @@ public protocol EKAccountReadProtocol {
     func getMediaBaseUrl() -> String
     func getToken() -> String?
     func getRefreshToken() -> String?
+    func getAuthType() -> Any?
 
 }
 
-extension EKAccountWriteProtocol {
-    
+public extension EKAccountWriteProtocol {
+
     func set(baseUrl: String) { }
-    
+
+}
+
+public extension EKAccountReadProtocol {
+
+    func getAuthType() -> Any? { nil }
+
 }
