@@ -10,6 +10,10 @@ import Foundation
 
 public protocol EKNetworkTokenRefresherProtocol {
 
+    // Обновление токена при 401 ошибке
     func refreshAuthToken(completion: @escaping (EKNetworkError?) -> Void)
+
+    // Обновление токена при 5012 ошибке для ДСС токена
+    func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void)
 
 }
