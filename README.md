@@ -7,7 +7,7 @@
 #### Swift Package Manager
 
 ```swift
-    .package(url: "https://github.com/emvakar/EKNetworking.git", from: "1.2.1")
+    .package(url: "https://github.com/emvakar/EKNetworking.git", from: "1.2.3")
 ```
 
 ## Usage
