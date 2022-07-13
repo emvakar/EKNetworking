@@ -8,43 +8,67 @@
 
 import Foundation
 import Moya
+import Logging
+import LoggingTelegram
 
 public protocol EKNetworkRequestWrapperProtocol {
-    func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void)
+
+    func runRequest(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)?,
+        progressResult: ((Double) -> Void)?,
+        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
+    )
+
 }
 
-public protocol EKErrorHandleDelegate: class {
+public protocol EKErrorHandleDelegate: AnyObject {
+
     func handle(error: EKNetworkError?, statusCode: Int)
+
 }
 
 open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
-    
+
     /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
-    
-    public init() { }
-    
-    open func runRequest(_ request: EKNetworkRequest, baseURL: String, authToken: String?, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ requestData: Data?, _ error: EKNetworkError?) -> Void) {
 
-        let target = EKNetworkTarget(request: request, token: authToken, baseURL: baseURL)
+    public init(logging: Logger? = nil) {
+        if let logging = logging {
+            logger = logging
+        }
+    }
 
-        self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, data, error) in
+    open func runRequest(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)?,
+        progressResult: ((Double) -> Void)?,
+        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
+    ) {
+
+        let target = EKNetworkTarget(request: request, tokenFunction: authToken, baseURL: baseURL)
+
+        self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, response, error) in
             #if DEBUG
-                let body: String? = data != nil ? String.init(data: data!, encoding: .utf8) : ""
-                print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                print("Request status code: \(statusCode)")
-                print("Request url: \(baseURL + target.path)")
-                print("Request headers: \(target.headers ?? [:])")
-                print("Request body: \(String(describing: body))")
-                print("Request error code \(String(describing: error?.errorCode)) body: \(String(describing: error?.plainBody))")
-                print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
+            logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            logger.debug("Request status code: \(statusCode)")
+            logger.debug("Request url: \(baseURL + target.path)")
+            logger.debug("Request headers: \(target.headers ?? [:])")
+            logger.debug("Request body: \(String(describing: body))")
+            if let code = error?.errorCode, let plainBody = error?.plainBody {
+                logger.debug("Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
+            }
+            logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             #endif
             self.delegate?.handle(error: error, statusCode: statusCode)
-            completion(statusCode, data, error)
+            completion(statusCode, response, error)
         })
     }
 
-    private func runWith(target: EKNetworkTarget, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ responseData: Data?, _ error: EKNetworkError?) -> Void) {
+    private func runWith(target: EKNetworkTarget, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
         let requestStartTime = DispatchTime.now()
 
@@ -58,20 +82,20 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
-            print("Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(6)) секунд")
+            logger.debug("Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) секунд")
 
             switch resultResponse {
 
             case .success(let response):
 
                 if 200...299 ~= response.statusCode {
-                    completion(response.statusCode, response.data, nil)
+                    completion(response.statusCode, response, nil)
                 } else {
                     let networkError = EKNetworkErrorStruct(statusCode: response.statusCode, data: response.data)
                     completion(response.statusCode, nil, networkError)
                 }
 
-                //если отправка не прошла на нашей стороне
+                // если отправка не прошла на нашей стороне
             case .failure(let error):
                 switch error {
                 case .underlying(let nsError as NSError, let response):

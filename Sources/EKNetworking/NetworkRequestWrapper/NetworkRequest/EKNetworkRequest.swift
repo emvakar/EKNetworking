@@ -7,22 +7,30 @@
 //
 
 import Foundation
-import Moya
 
 public enum EKRequestHTTPMethod {
+
+    case options
     case get
+    case head
     case post
     case put
     case patch
     case delete
+    case trace
+    case connect
     case multiple
+
 }
 
 public protocol EKNetworkRequest {
+
     var path: String { get }
     var method: EKRequestHTTPMethod { get }
     var urlParameters: [String: Any]? { get }
     var bodyParameters: [String: Any]? { get }
-    var multipartBody: [MultipartFormData]? { get }
-    var headers: [EKHeadersKey: String]? { get }
+    var multipartBody: [EKMultipartFormData]? { get }
+    var headers: [String: String]? { get }
+    var authHeader: AuthHeader { get }
+    
 }

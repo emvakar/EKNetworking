@@ -9,20 +9,18 @@
 import Foundation
 
 public protocol EKNetworkTokenRefresherProtocol {
+
+    // Обновление токена при 401 ошибке
     func refreshAuthToken(completion: @escaping (EKNetworkError?) -> Void)
+
+    // Обновление токена при 5012 ошибке для ДСС токена
+    func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void)
+
 }
 
-public class EKNetworkTokenRefresher: EKNetworkTokenRefresherProtocol {
+public extension EKNetworkTokenRefresherProtocol {
 
-    public var accountManager: EKAccountManagerProtocol
+    // Дефолтная реализация обновление токена ДСС
+    func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void) { completion(nil) }
 
-    public init(accountManager: EKAccountManagerProtocol) {
-        self.accountManager = accountManager
-    }
-
-    public func refreshAuthToken(completion: @escaping (EKNetworkError?) -> Void) {
-        let error = EKNetworkErrorStruct(error: NSError(domain: "can do it", code: 10008, userInfo: nil))
-        completion(error)
-//        // TODO: - сделать рефрештокен
-    }
 }
