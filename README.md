@@ -1,4 +1,4 @@
-[![Swift Version](https://img.shields.io/badge/Swift-5.5-green.svg)](https://swift.org)  [![Build and Test](https://github.com/emvakar/EKNetworking/actions/workflows/build_test.yml/badge.svg?branch=master)](https://github.com/emvakar/EKNetworking/actions/workflows/build_test.yml)
+[![Swift Version](https://img.shields.io/badge/Swift-5.5-green.svg)](https://swift.org)  [![Build and Test](https://github.com/emvakar/EKNetworking/actions/workflows/tagging.yml/badge.svg?branch=master)](https://github.com/emvakar/EKNetworking/actions/workflows/tagging.yml)
 
 ## Support EKNetworking development by giving a ⭐️
 
