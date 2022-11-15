@@ -13,13 +13,12 @@ import LoggingTelegram
 
 public protocol EKNetworkRequestWrapperProtocol {
 
-    func runRequest(
-        request: EKNetworkRequest,
-        baseURL: String,
-        authToken: (() -> String?)?,
-        progressResult: ((Double) -> Void)?,
-        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
-    )
+    func runRequest(request: EKNetworkRequest,
+                    baseURL: String,
+                    authToken: (() -> String?)?,
+                    progressResult: ((Double) -> Void)?,
+                    showBodyResponse: Bool,
+                    completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void)
 
 }
 
@@ -40,29 +39,30 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         }
     }
 
-    open func runRequest(
-        request: EKNetworkRequest,
-        baseURL: String,
-        authToken: (() -> String?)?,
-        progressResult: ((Double) -> Void)?,
-        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
-    ) {
+    open func runRequest(request: EKNetworkRequest,
+                         baseURL: String,
+                         authToken: (() -> String?)?,
+                         progressResult: ((Double) -> Void)?,
+                         showBodyResponse: Bool = false,
+                         completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
         let target = EKNetworkTarget(request: request, tokenFunction: authToken, baseURL: baseURL)
 
         self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, response, error) in
-            #if DEBUG
-            let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
-            logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            logger.debug("Request status code: \(statusCode)")
-            logger.debug("Request url: \(baseURL + target.path)")
-            logger.debug("Request headers: \(target.headers ?? [:])")
-            logger.debug("Request body: \(String(describing: body))")
-            if let code = error?.errorCode, let plainBody = error?.plainBody {
-                logger.debug("Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
+            if showBodyResponse {
+                #if DEBUG
+                let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
+                logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                logger.debug("Request status code: \(statusCode)")
+                logger.debug("Request url: \(baseURL + target.path)")
+                logger.debug("Request headers: \(target.headers ?? [:])")
+                logger.debug("Request body: \(String(describing: body))")
+                if let code = error?.errorCode, let plainBody = error?.plainBody {
+                    logger.debug("Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
+                }
+                logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+                #endif
             }
-            logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-            #endif
             self.delegate?.handle(error: error, statusCode: statusCode)
             completion(statusCode, response, error)
         })
