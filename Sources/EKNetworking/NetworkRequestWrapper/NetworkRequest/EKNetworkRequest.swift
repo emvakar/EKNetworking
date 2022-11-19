@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum EKRequestHTTPMethod {
+public enum EKRequestHTTPMethod: Codable {
 
     case options
     case get
@@ -23,7 +23,7 @@ public enum EKRequestHTTPMethod {
 
 }
 
-public protocol EKNetworkRequest {
+public protocol EKNetworkRequest: Codable {
 
     var path: String { get }
     var method: EKRequestHTTPMethod { get }
