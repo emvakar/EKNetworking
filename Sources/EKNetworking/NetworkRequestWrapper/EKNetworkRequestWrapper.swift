@@ -8,6 +8,7 @@
 
 import Foundation
 import Moya
+import Alamofire
 import Logging
 import LoggingTelegram
 
@@ -72,7 +73,19 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
         let requestStartTime = DispatchTime.now()
 
-        let provider = MoyaProvider<EKNetworkTarget>()
+        class DefaultAlamofireSession: Alamofire.Session {
+
+            static let shared: DefaultAlamofireSession = {
+                let configuration = URLSessionConfiguration.default
+                configuration.headers = .default
+                configuration.timeoutIntervalForRequest = 30 // as seconds, you can set your request timeout
+                configuration.timeoutIntervalForResource = 30 // as seconds, you can set your resource timeout
+                configuration.requestCachePolicy = .useProtocolCachePolicy
+                return DefaultAlamofireSession(configuration: configuration)
+            }()
+        }
+
+        let provider = MoyaProvider<EKNetworkTarget>(session: DefaultAlamofireSession.shared)
         provider.request(target, progress: { (progressResponse) in
 
             let progress = progressResponse.progress

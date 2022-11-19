@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum AuthHeader: String, CaseIterable {
+public enum AuthHeader: String, CaseIterable, Codable {
     case bearerToken = "Authorization"
     case sessionToken = "Session-Token"
 }
