@@ -36,7 +36,7 @@ public protocol EKNetworkError: Error {
 
 }
 
-public struct EKNetworkErrorStruct: EKNetworkError {
+open class EKNetworkErrorStruct: EKNetworkError {
 
     public var statusCode: Int = 0
     public var type: EKNetworkErrorType = .unspecified(statusCode: 0)
@@ -56,6 +56,7 @@ public struct EKNetworkErrorStruct: EKNetworkError {
         self.statusCode = statusCode
         self.setNetworkErrorType(from: statusCode)
         self.parseData(data: data, statusCode: statusCode)
+        self.data = data
     }
 
     public init(error: NSError) {
@@ -63,7 +64,7 @@ public struct EKNetworkErrorStruct: EKNetworkError {
         self.userInfo = error.userInfo
     }
 
-    private mutating func setNetworkErrorType(from statusCode: Int) {
+    private func setNetworkErrorType(from statusCode: Int) {
         var networkErrorType: EKNetworkErrorType
 
         switch statusCode {
@@ -93,7 +94,7 @@ public struct EKNetworkErrorStruct: EKNetworkError {
         self.type = networkErrorType
     }
 
-    private mutating func parseData(data: Data?, statusCode: Int?) {
+    open func parseData(data: Data?, statusCode: Int?) {
         guard let data = data else {
             return
         }
