@@ -19,6 +19,7 @@ public protocol EKNetworkRequestWrapperProtocol {
                     authToken: (() -> String?)?,
                     progressResult: ((Double) -> Void)?,
                     showBodyResponse: Bool,
+                    timeoutInSeconds: TimeInterval,
                     completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void)
 
 }
@@ -45,11 +46,12 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                          authToken: (() -> String?)?,
                          progressResult: ((Double) -> Void)?,
                          showBodyResponse: Bool = false,
+                         timeoutInSeconds: TimeInterval,
                          completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
         let target = EKNetworkTarget(request: request, tokenFunction: authToken, baseURL: baseURL)
 
-        self.runWith(target: target, progressResult: progressResult, completion: { (statusCode, response, error) in
+        self.runWith(target: target, progressResult: progressResult, timeoutInSeconds: timeoutInSeconds, completion: { (statusCode, response, error) in
             if showBodyResponse {
                 #if DEBUG
                 let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
@@ -69,23 +71,26 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         })
     }
 
-    private func runWith(target: EKNetworkTarget, progressResult: ((Double) -> Void)?, completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
+    private func runWith(target: EKNetworkTarget,
+                         progressResult: ((Double) -> Void)?,
+                         timeoutInSeconds: TimeInterval,
+                         completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
         let requestStartTime = DispatchTime.now()
 
         class DefaultAlamofireSession: Alamofire.Session {
 
-            static let shared: DefaultAlamofireSession = {
+            static func shared(timeoutInSeconds: TimeInterval = 30) -> DefaultAlamofireSession {
                 let configuration = URLSessionConfiguration.default
                 configuration.headers = .default
-                configuration.timeoutIntervalForRequest = 30 // as seconds, you can set your request timeout
-                configuration.timeoutIntervalForResource = 30 // as seconds, you can set your resource timeout
+                configuration.timeoutIntervalForRequest = timeoutInSeconds // as seconds, you can set your request timeout
+                configuration.timeoutIntervalForResource = timeoutInSeconds // as seconds, you can set your resource timeout
                 configuration.requestCachePolicy = .useProtocolCachePolicy
                 return DefaultAlamofireSession(configuration: configuration)
-            }()
+            }
         }
 
-        let provider = MoyaProvider<EKNetworkTarget>(session: DefaultAlamofireSession.shared)
+        let provider = MoyaProvider<EKNetworkTarget>(session: DefaultAlamofireSession.shared(timeoutInSeconds: timeoutInSeconds))
         provider.request(target, progress: { (progressResponse) in
 
             let progress = progressResponse.progress
