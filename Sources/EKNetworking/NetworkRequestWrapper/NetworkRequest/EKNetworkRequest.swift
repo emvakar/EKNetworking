@@ -32,5 +32,6 @@ public protocol EKNetworkRequest: Codable {
     var multipartBody: [EKMultipartFormData]? { get }
     var headers: [String: String]? { get }
     var authHeader: AuthHeader { get }
+    var needToCache: Bool { get set }
     
 }
