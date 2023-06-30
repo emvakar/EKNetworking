@@ -80,6 +80,10 @@ struct EKNetworkTarget: TargetType {
                 return .uploadCompositeMultipart(multipart,
                                                  urlParameters: apiRequest.urlParameters ?? [:])
             }
+            if let jsonArray = apiRequest.array,
+               let arrayData = try? JSONSerialization.data(withJSONObject: jsonArray) {
+                return .requestCompositeData(bodyData: arrayData, urlParameters: apiRequest.urlParameters ?? [:])
+            }
             return .requestCompositeParameters(bodyParameters: (apiRequest.bodyParameters ?? [:]),
                                                bodyEncoding: JSONEncoding.default,
                                                urlParameters: apiRequest.urlParameters ?? [:])

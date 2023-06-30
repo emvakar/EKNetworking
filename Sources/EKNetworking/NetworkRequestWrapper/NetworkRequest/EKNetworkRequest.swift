@@ -30,6 +30,7 @@ public protocol EKNetworkRequest: Codable {
     var urlParameters: [String: Any]? { get }
     var bodyParameters: [String: Any]? { get }
     var multipartBody: [EKMultipartFormData]? { get }
+    var array: [[String: Any]]? { get }
     var headers: [String: String]? { get }
     var authHeader: AuthHeader { get }
     var needToCache: Bool { get set }
