@@ -13,4 +13,9 @@ public extension EKNetworkRequest {
         get { return false }
         set {}
     }
+    
+    var array: [[String: Any]]? {
+        get { return nil }
+        set {}
+    }
 }
