@@ -10,7 +10,7 @@ import Foundation
 import Moya
 import Alamofire
 import Logging
-import LoggingTelegram
+import PulseLogHandler
 
 public protocol EKNetworkRequestWrapperProtocol {
 
@@ -51,17 +51,18 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
         let target = EKNetworkTarget(request: request, tokenFunction: authToken, baseURL: baseURL)
 
+        logger.debug("[NETWORK]: Start request to \(baseURL)\(request.path)")
         self.runWith(target: target, progressResult: progressResult, timeoutInSeconds: timeoutInSeconds, completion: { (statusCode, response, error) in
             if showBodyResponse {
                 #if DEBUG
                 let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
                 logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                logger.debug("Request status code: \(statusCode)")
-                logger.debug("Request url: \(baseURL + target.path)")
-                logger.debug("Request headers: \(target.headers ?? [:])")
-                logger.debug("Request body: \(String(describing: body))")
+                logger.debug("[NETWORK]: Response status code: \(statusCode)")
+                logger.debug("[NETWORK]: Response url: \(baseURL + target.path)")
+                logger.debug("[NETWORK]: Response headers: \(target.headers ?? [:])")
+                logger.debug("[NETWORK]: Response body: \(String(describing: body))")
                 if let code = error?.errorCode, let plainBody = error?.plainBody {
-                    logger.debug("Request error code \(String(describing: code)) body: \(String(describing: plainBody))")
+                    logger.debug("[NETWORK]: Response error code \(String(describing: code)) body: \(String(describing: plainBody))")
                 }
                 logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                 #endif
@@ -82,11 +83,13 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
             static func shared(timeoutInSeconds: TimeInterval = 30) -> DefaultAlamofireSession {
                 let configuration = URLSessionConfiguration.default
+                let log: NetworkLogger = NetworkLogger()
+                let eventMonitors: [EventMonitor] = [EKNetworkLoggerMonitor(logger: log)]
                 configuration.headers = .default
                 configuration.timeoutIntervalForRequest = timeoutInSeconds // as seconds, you can set your request timeout
                 configuration.timeoutIntervalForResource = timeoutInSeconds // as seconds, you can set your resource timeout
                 configuration.requestCachePolicy = .useProtocolCachePolicy
-                return DefaultAlamofireSession(configuration: configuration)
+                return DefaultAlamofireSession(configuration: configuration, eventMonitors: eventMonitors)
             }
         }
 
@@ -100,7 +103,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
-            logger.debug("Продолжительность запроса: \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) секунд")
+            logger.debug("[NETWORK]: Duration is \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) sec")
 
             switch resultResponse {
 

@@ -7,7 +7,6 @@
 //
 
 import Logging
-import LoggingTelegram
 
 public var logger = Logger(label: "EKNetworking")
 
