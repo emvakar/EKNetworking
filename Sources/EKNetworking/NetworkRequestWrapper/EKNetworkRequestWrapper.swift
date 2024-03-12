@@ -34,11 +34,13 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
     /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
+    public var logEnable: Bool
 
-    public init(logging: Logger? = nil) {
+    public init(logging: Logger? = nil, logEnable: Bool = false) {
         if let logging = logging {
             logger = logging
         }
+        self.logEnable = logEnable
     }
 
     open func runRequest(request: EKNetworkRequest,
@@ -81,10 +83,10 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
         class DefaultAlamofireSession: Alamofire.Session {
 
-            static func shared(timeoutInSeconds: TimeInterval = 30) -> DefaultAlamofireSession {
+            static func shared(timeoutInSeconds: TimeInterval = 30, logEnable: Bool = false) -> DefaultAlamofireSession {
                 let configuration = URLSessionConfiguration.default
                 let log: NetworkLogger = NetworkLogger()
-                let eventMonitors: [EventMonitor] = [EKNetworkLoggerMonitor(logger: log)]
+                let eventMonitors: [EventMonitor] = logEnable ? [EKNetworkLoggerMonitor(logger: log)] : []
                 configuration.headers = .default
                 configuration.timeoutIntervalForRequest = timeoutInSeconds // as seconds, you can set your request timeout
                 configuration.timeoutIntervalForResource = timeoutInSeconds // as seconds, you can set your resource timeout
@@ -93,7 +95,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             }
         }
 
-        let provider = MoyaProvider<EKNetworkTarget>(session: DefaultAlamofireSession.shared(timeoutInSeconds: timeoutInSeconds))
+        let provider = MoyaProvider<EKNetworkTarget>(session: DefaultAlamofireSession.shared(timeoutInSeconds: timeoutInSeconds, logEnable: logEnable))
         provider.request(target, progress: { (progressResponse) in
 
             let progress = progressResponse.progress
