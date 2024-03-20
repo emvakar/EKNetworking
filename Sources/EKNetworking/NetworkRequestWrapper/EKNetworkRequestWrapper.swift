@@ -85,8 +85,11 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
             static func shared(timeoutInSeconds: TimeInterval = 30, logEnable: Bool = false) -> DefaultAlamofireSession {
                 let configuration = URLSessionConfiguration.default
-                let log: NetworkLogger = NetworkLogger()
-                let eventMonitors: [EventMonitor] = logEnable ? [EKNetworkLoggerMonitor(logger: log)] : []
+                var eventMonitors: [EventMonitor] = []
+                if logEnable {
+                    let log: NetworkLogger = NetworkLogger()
+                    eventMonitors = [EKNetworkLoggerMonitor(logger: log)]
+                }
                 configuration.headers = .default
                 configuration.timeoutIntervalForRequest = timeoutInSeconds // as seconds, you can set your request timeout
                 configuration.timeoutIntervalForResource = timeoutInSeconds // as seconds, you can set your resource timeout
