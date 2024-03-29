@@ -25,14 +25,13 @@ public class LogExporter {
 
     public init() { }
 
-    public func shareLogs() async throws {
+    public func shareLogs(on viewController: UIViewController) async throws {
         let sessions = Set(sessions.compactMap({ $0.id }))
         let options = LoggerStore.ExportOptions(predicate: predicate(), sessions: sessions)
         self.shareItems = try await prepareForSharing(store: LoggerStore.shared, options: options)
         if let item = shareItems {
             let shareView = ShareView(item)
-            let activityViewController = shareView.onCompletion(item.cleanup).makeUIViewController(context: shareView)
-
+            shareView.onCompletion(item.cleanup).presentOnViewController(viewController)
         }
 
     }
