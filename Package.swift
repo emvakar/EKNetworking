@@ -14,7 +14,7 @@ let package = Package(name: "EKNetworking", platforms: [.iOS(.v14), .macOS(.v10_
         // Dependencies declare other packages that this package depends on.
          .package(url: "https://github.com/Moya/Moya.git", from: "15.0.0"),
          .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
-         .package(url: "https://github.com/kean/Pulse.git", from: "4.0.5"),
+         .package(url: "https://github.com/emvakar/Pulse.git", branch: "main"),
          .package(url: "https://github.com/kean/PulseLogHandler.git", from: "4.0.1"),
     ],
     targets: [
