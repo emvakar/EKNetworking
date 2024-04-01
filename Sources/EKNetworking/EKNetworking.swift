@@ -19,14 +19,12 @@ public typealias EKResponse = Response
 
 public class LogExporter {
 
-//    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \LoggerSessionEntity.createdAt, ascending: false)])
-//    private var sessions: FetchedResults<LoggerSessionEntity>
+    private let store = LoggerStore.shared
     private var shareItems: ShareItems?
 
     public init() { }
 
-    public func shareLogs(on viewController: UIViewController) async throws {
-
+    public func collectLogsForSharing() async throws -> ShareItems? {
         let store = LoggerStore.shared
         let storedSessions = try await withUnsafeThrowingContinuation { continuation in
             store.backgroundContext.perform {
@@ -38,10 +36,14 @@ public class LogExporter {
         }
         let sessions = Set(storedSessions.compactMap({ $0.id }))
         let options = LoggerStore.ExportOptions(predicate: predicate(), sessions: sessions)
-        self.shareItems = try await prepareForSharing(store: LoggerStore.shared, options: options)
-        if let item = shareItems {
+        shareItems = try await prepareForSharing(store: LoggerStore.shared, options: options)
+        return shareItems
+    }
+
+    public func shareLogsViewController(on viewController: UIViewController) async throws {
+        if let item = try await collectLogsForSharing() {
             let shareView = ShareView(item)
-            shareView.onCompletion(item.cleanup).presentOnViewController(viewController)
+            shareView.presentOnViewController(viewController)
         }
     }
 
