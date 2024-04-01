@@ -24,9 +24,6 @@ struct EKNetworkLoggerMonitor: EventMonitor {
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         log.logDataTask(dataTask, didReceive: data)
-
-//        guard let response = dataTask.response else { return }
-//        log.logDataTask(dataTask, didReceive: response)
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {

@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/Alamofire/Alamofire.git",
         "state": {
           "branch": null,
-          "revision": "3dc6a42c7727c49bf26508e29b0a0b35f9c7e1ad",
-          "version": "5.8.1"
+          "revision": "723fa5a6c65812aec4a0d7cc432ee198883b6e00",
+          "version": "5.9.0"
         }
       },
       {
@@ -21,11 +21,11 @@
       },
       {
         "package": "Pulse",
-        "repositoryURL": "https://github.com/kean/Pulse.git",
+        "repositoryURL": "https://github.com/emvakar/Pulse.git",
         "state": {
-          "branch": null,
-          "revision": "d647e99f06abc94d63579e335ad4ce368195c149",
-          "version": "4.0.5"
+          "branch": "main",
+          "revision": "7642539524eb831ec21488861e70fce679dfce41",
+          "version": null
         }
       },
       {
