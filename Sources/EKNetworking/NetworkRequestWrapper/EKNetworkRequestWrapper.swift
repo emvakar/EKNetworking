@@ -11,6 +11,7 @@ import Moya
 import Alamofire
 import Logging
 import PulseLogHandler
+import Pulse
 
 public protocol EKNetworkRequestWrapperProtocol {
 
