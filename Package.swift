@@ -7,15 +7,13 @@ let package = Package(name: "EKNetworking", platforms: [.iOS(.v14), .macOS(.v10_
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(name: "EKNetworking", targets: ["EKNetworking"]),
-//        .library(name: "Pulse", targets: ["EKNetworking"]),
-//        .library(name: "PulseUI", targets: ["EKNetworking"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
          .package(url: "https://github.com/Moya/Moya.git", from: "15.0.0"),
          .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
-         .package(url: "https://github.com/emvakar/Pulse.git", branch: "main"),
-         .package(url: "https://github.com/kean/PulseLogHandler.git", from: "4.0.1"),
+         .package(url: "https://github.com/emvakar/Pulse.git", from: "1.0.0"),
+         .package(url: "https://github.com/emvakar/PulseLogHandler.git", from: "1.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
