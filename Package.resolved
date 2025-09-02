@@ -30,11 +30,11 @@
       },
       {
         "package": "PulseLogHandler",
-        "repositoryURL": "https://github.com/kean/PulseLogHandler.git",
+        "repositoryURL": "https://github.com/emvakar/PulseLogHandler.git",
         "state": {
-          "branch": null,
-          "revision": "7280e980b71a1267099e7751a900fd1e67b7f4bb",
-          "version": "4.0.1"
+          "branch": "main",
+          "revision": "3a0d256bf6270286001b67de20eadc517d442e3d",
+          "version": null
         }
       },
       {
