@@ -42,8 +42,8 @@ public class LogExporter {
 
     public func shareLogsViewController(on viewController: UIViewController) async throws {
         if let item = try await collectLogsForSharing() {
-            let shareView = ShareView(item)
-            shareView.presentOnViewController(viewController)
+            let shareView = await ShareView(item)
+            await shareView.presentOnViewController(viewController)
         }
     }
 
@@ -76,14 +76,14 @@ private extension LogExporter {
 //        case .har:
 //            return try await prepareForSharing(store: store, output: .har, options: options)
 //        }
-        return try await prepareStoreForSharing(store: store, as: .archive, options: options)
+        return try await prepareStoreForSharing(store: store, options: options)
     }
 
-    func prepareStoreForSharing(store: LoggerStore, as docType: LoggerStore.DocumentType, options: LoggerStore.ExportOptions, output: ShareStoreOutput = .store) async throws -> ShareItems {
+    func prepareStoreForSharing(store: LoggerStore, options: LoggerStore.ExportOptions, output: ShareStoreOutput = .store) async throws -> ShareItems {
         let directory = TemporaryDirectory()
 
         let logsURL = directory.url.appendingPathComponent("logs-\(makeCurrentDate()).\(output.fileExtension)")
-        try await store.export(to: logsURL, as: docType, options: options)
+        try await store.export(to: logsURL, options: options)
         return ShareItems([logsURL], cleanup: directory.remove)
     }
 
