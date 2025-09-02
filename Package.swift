@@ -12,8 +12,8 @@ let package = Package(name: "EKNetworking", platforms: [.iOS(.v15), .macOS(.v10_
         // Dependencies declare other packages that this package depends on.
          .package(url: "https://github.com/Moya/Moya.git", from: "15.0.0"),
          .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
-         .package(url: "https://github.com/emvakar/Pulse.git", .branch("main")),
-         .package(url: "https://github.com/emvakar/PulseLogHandler.git", .branch("main")),
+         .package(url: "https://github.com/emvakar/Pulse.git", from: "5.1.5"),
+         .package(url: "https://github.com/emvakar/PulseLogHandler.git", from: "5.1.1"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
