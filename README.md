@@ -93,9 +93,9 @@ extension NetworkRequestProvider: NetworkTodoProtocol {
         
             // do somthing with response
         
-            // response is EKResponse aka 
-            // Represents a response to a `MoyaProvider.request`.
-            // final class Response: CustomDebugStringConvertible, Equatable
+            // response is EKResponse
+            // Represents a response from the network request
+            // Contains statusCode, data, request, and response properties
         }
     }
     

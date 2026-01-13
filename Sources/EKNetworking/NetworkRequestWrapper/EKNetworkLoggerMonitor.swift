@@ -7,11 +7,12 @@
 //
 
 import Foundation
-import Alamofire
 import PulseLogHandler
 
-/// A network logger monitor for Alamofire requests, integrated with Pulse.
-struct EKNetworkLoggerMonitor: EventMonitor {
+/// A network logger monitor for URLSession requests, integrated with Pulse.
+/// This has been updated to work with native URLSession instead of Alamofire.
+/// The actual logging is now handled by EKURLSessionDelegate in EKNetworkRequestWrapper.
+struct EKNetworkLoggerMonitor {
     
     // MARK: - Properties
     
@@ -23,27 +24,13 @@ struct EKNetworkLoggerMonitor: EventMonitor {
         self.log = logger
     }
     
-    // MARK: - EventMonitor Methods
+    // MARK: - Logging Methods
     
-    func request(_ request: Request, didCreateTask task: URLSessionTask) {
+    func logTaskCreated(_ task: URLSessionTask) {
         log.logTaskCreated(task)
     }
     
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        logDataTask(dataTask, didReceive: data)
-    }
-    
-    func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
-        log.logTask(task, didFinishCollecting: metrics)
-    }
-    
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        log.logTask(task, didCompleteWithError: error)
-    }
-    
-    // MARK: - Private Helpers
-    
-    private func logDataTask(_ dataTask: URLSessionDataTask, didReceive data: Data) {
+    func logDataTask(_ dataTask: URLSessionDataTask, didReceive data: Data) {
         if let prettyString = serialize(data: data) {
             logResponse(dataTask: dataTask, responseBody: prettyString)
         } else {
@@ -51,8 +38,17 @@ struct EKNetworkLoggerMonitor: EventMonitor {
         }
     }
     
+    func logTask(_ task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
+        log.logTask(task, didFinishCollecting: metrics)
+    }
+    
+    func logTask(_ task: URLSessionTask, didCompleteWithError error: Error?) {
+        log.logTask(task, didCompleteWithError: error)
+    }
+    
+    // MARK: - Private Helpers
+    
     private func logResponse(dataTask: URLSessionDataTask, responseBody: String) {
-        guard let originalRequest = dataTask.originalRequest else { return }
         log.logDataTask(dataTask, didReceive: Data(responseBody.utf8))
     }
     

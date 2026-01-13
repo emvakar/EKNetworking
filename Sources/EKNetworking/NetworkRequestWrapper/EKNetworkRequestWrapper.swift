@@ -1,5 +1,5 @@
 //
-//  EKNetworkTokenRefresher.swift
+//  EKNetworkRequestWrapper.swift
 //  EKNetworking
 //
 //  Created by Emil Karimov on 24.09.2019.
@@ -7,8 +7,6 @@
 //
 
 import Foundation
-import Moya
-import Alamofire
 import Logging
 import PulseLogHandler
 import Pulse
@@ -36,12 +34,32 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
     public var logEnable: Bool
+    
+    /// URLSession for making network requests
+    private let urlSession: URLSession
+    
+    /// Network logger for Pulse integration
+    private let networkLogger: NetworkLogger?
 
     public init(logging: Logger? = nil, logEnable: Bool = false) {
         if let logging = logging {
             logger = logging
         }
         self.logEnable = logEnable
+        
+        // Create URLSession configuration
+        let configuration = URLSessionConfiguration.default
+        configuration.requestCachePolicy = .useProtocolCachePolicy
+        
+        // Setup network logger for Pulse if logging is enabled
+        if logEnable {
+            self.networkLogger = NetworkLogger()
+            let delegate = EKURLSessionDelegate(logger: self.networkLogger!)
+            self.urlSession = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+        } else {
+            self.networkLogger = nil
+            self.urlSession = URLSession(configuration: configuration)
+        }
     }
 
     open func runRequest(request: EKNetworkRequest,
@@ -52,86 +70,290 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                          timeoutInSeconds: TimeInterval,
                          completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
-        let target = EKNetworkTarget(request: request, tokenFunction: authToken, baseURL: baseURL)
-
         logger.debug("[NETWORK]: Start request to \(baseURL)\(request.path)")
-        self.runWith(target: target, progressResult: progressResult, timeoutInSeconds: timeoutInSeconds, completion: { (statusCode, response, error) in
-            if showBodyResponse {
-                #if DEBUG
-                let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
-                logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                logger.debug("[NETWORK]: Response status code: \(statusCode)")
-                logger.debug("[NETWORK]: Response url: \(baseURL + target.path)")
-                logger.debug("[NETWORK]: Response headers: \(target.headers ?? [:])")
-                logger.debug("[NETWORK]: Response body: \(String(describing: body))")
-                if let code = error?.errorCode, let plainBody = error?.plainBody {
-                    logger.debug("[NETWORK]: Response error code \(String(describing: code)) body: \(String(describing: plainBody))")
+        
+        self.runWith(
+            request: request,
+            baseURL: baseURL,
+            authToken: authToken,
+            progressResult: progressResult,
+            showBodyResponse: showBodyResponse,
+            timeoutInSeconds: timeoutInSeconds,
+            completion: { (statusCode, response, error) in
+                if showBodyResponse {
+                    #if DEBUG
+                    let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
+                    logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    logger.debug("[NETWORK]: Response status code: \(statusCode)")
+                    logger.debug("[NETWORK]: Response url: \(baseURL + request.path)")
+                    logger.debug("[NETWORK]: Response headers: \(request.headers ?? [:])")
+                    logger.debug("[NETWORK]: Response body: \(String(describing: body))")
+                    if let code = error?.errorCode, let plainBody = error?.plainBody {
+                        logger.debug("[NETWORK]: Response error code \(String(describing: code)) body: \(String(describing: plainBody))")
+                    }
+                    logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+                    #endif
                 }
-                logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-                #endif
+                self.delegate?.handle(error: error, statusCode: statusCode)
+                completion(statusCode, response, error)
             }
-            self.delegate?.handle(error: error, statusCode: statusCode)
-            completion(statusCode, response, error)
-        })
+        )
     }
 
-    private func runWith(target: EKNetworkTarget,
-                         progressResult: ((Double) -> Void)?,
-                         timeoutInSeconds: TimeInterval,
-                         completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
-
+    private func runWith(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)?,
+        progressResult: ((Double) -> Void)?,
+        showBodyResponse: Bool,
+        timeoutInSeconds: TimeInterval,
+        completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void
+    ) {
         let requestStartTime = DispatchTime.now()
-
-        class DefaultAlamofireSession: Alamofire.Session {
-
-            static func shared(timeoutInSeconds: TimeInterval = 30, logEnable: Bool = false) -> DefaultAlamofireSession {
-                let configuration = URLSessionConfiguration.default
-                var eventMonitors: [EventMonitor] = []
-                if logEnable {
-                    let log: NetworkLogger = NetworkLogger()
-                    eventMonitors = [EKNetworkLoggerMonitor(logger: log)]
-                }
-                configuration.headers = .default
-                configuration.timeoutIntervalForRequest = timeoutInSeconds // as seconds, you can set your request timeout
-                configuration.timeoutIntervalForResource = timeoutInSeconds // as seconds, you can set your resource timeout
-                configuration.requestCachePolicy = .useProtocolCachePolicy
-                return DefaultAlamofireSession(configuration: configuration, eventMonitors: eventMonitors)
-            }
+        
+        // Build URLRequest
+        guard let urlRequest = buildURLRequest(
+            request: request,
+            baseURL: baseURL,
+            authToken: authToken,
+            timeoutInSeconds: timeoutInSeconds
+        ) else {
+            let error = EKNetworkErrorStruct(statusCode: URLError.badURL.rawValue, data: nil)
+            completion(URLError.badURL.rawValue, nil, error)
+            return
         }
-
-        let provider = MoyaProvider<EKNetworkTarget>(session: DefaultAlamofireSession.shared(timeoutInSeconds: timeoutInSeconds, logEnable: logEnable))
-        provider.request(target, progress: { (progressResponse) in
-
-            let progress = progressResponse.progress
-            progressResult?(progress)
-
-        }) { (resultResponse) in
-
+        
+        // Log task creation
+        if let logger = networkLogger {
+            logger.logTaskCreated(urlRequest)
+        }
+        
+        // Create URLSession task
+        let task = urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
+            guard let self = self else { return }
+            
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
             logger.debug("[NETWORK]: Duration is \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) sec")
-
-            switch resultResponse {
-
-            case .success(let response):
-
-                if 200...299 ~= response.statusCode {
-                    completion(response.statusCode, response, nil)
+            
+            // Handle error
+            if let error = error {
+                let nsError = error as NSError
+                let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: data)
+                
+                completion(nsError.code, nil, networkError)
+                return
+            }
+            
+            // Get response data
+            let responseData = data ?? Data()
+            
+            // Log response data
+            if let logger = self.networkLogger, let httpResponse = response as? HTTPURLResponse {
+                logger.logDataTask(urlRequest, response: httpResponse, data: responseData)
+            }
+            
+            // Handle HTTP response
+            if let httpResponse = response as? HTTPURLResponse {
+                let ekResponse = EKResponse(statusCode: httpResponse.statusCode, data: responseData, request: urlRequest, response: httpResponse)
+                
+                if 200...299 ~= httpResponse.statusCode {
+                    completion(httpResponse.statusCode, ekResponse, nil)
                 } else {
-                    let networkError = EKNetworkErrorStruct(statusCode: response.statusCode, data: response.data)
-                    completion(response.statusCode, nil, networkError)
+                    let networkError = EKNetworkErrorStruct(statusCode: httpResponse.statusCode, data: responseData)
+                    completion(httpResponse.statusCode, nil, networkError)
                 }
-
-                // если отправка не прошла на нашей стороне
-            case .failure(let error):
-                switch error {
-                case .underlying(let nsError as NSError, let response):
-                    let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: response?.data)
-                    completion(nsError.code, nil, networkError)
-                default:
-                    break
+            } else {
+                let networkError = EKNetworkErrorStruct(statusCode: 0, data: responseData)
+                completion(0, nil, networkError)
+            }
+        }
+        
+        // Setup progress tracking if needed
+        if progressResult != nil {
+            // Note: Progress tracking requires URLSessionTaskDelegate
+            // We'll need to enhance this with a delegate-based approach
+            // For now, this is a simplified implementation
+        }
+        
+        task.resume()
+    }
+    
+    private func buildURLRequest(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)?,
+        timeoutInSeconds: TimeInterval
+    ) -> URLRequest? {
+        // Construct URL
+        guard let baseUrl = URL(string: baseURL) else { return nil }
+        var urlComponents = URLComponents(url: baseUrl.appendingPathComponent(request.path), resolvingAgainstBaseURL: false)
+        
+        // Add query parameters
+        if let urlParameters = request.urlParameters, !urlParameters.isEmpty {
+            var queryItems: [URLQueryItem] = []
+            
+            for (key, value) in urlParameters {
+                // Handle arrays specially
+                if let arrayValue = value as? [Any] {
+                    // For arrays, create multiple query items with the same key
+                    // Example: ["ids": [1, 2, 3]] becomes "ids=1&ids=2&ids=3"
+                    if arrayValue.isEmpty {
+                        // For empty arrays, don't add any query items
+                        // Some APIs expect no parameter, others expect key with no value
+                        // You can change this behavior if needed
+                        continue
+                    } else {
+                        for item in arrayValue {
+                            queryItems.append(URLQueryItem(name: key, value: "\(item)"))
+                        }
+                    }
+                } else {
+                    // For non-array values, use string representation
+                    queryItems.append(URLQueryItem(name: key, value: "\(value)"))
+                }
+            }
+            
+            urlComponents?.queryItems = queryItems
+        }
+        
+        guard let url = urlComponents?.url else { return nil }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.timeoutInterval = timeoutInSeconds
+        
+        // Set HTTP method
+        switch request.method {
+        case .get:
+            urlRequest.httpMethod = "GET"
+        case .post, .multiple:
+            urlRequest.httpMethod = "POST"
+        case .put:
+            urlRequest.httpMethod = "PUT"
+        case .delete:
+            urlRequest.httpMethod = "DELETE"
+        case .patch:
+            urlRequest.httpMethod = "PATCH"
+        case .options:
+            urlRequest.httpMethod = "OPTIONS"
+        case .head:
+            urlRequest.httpMethod = "HEAD"
+        case .trace:
+            urlRequest.httpMethod = "TRACE"
+        case .connect:
+            urlRequest.httpMethod = "CONNECT"
+        }
+        
+        // Set headers
+        if let headers = request.headers {
+            for (key, value) in headers {
+                urlRequest.setValue(value, forHTTPHeaderField: key)
+            }
+        }
+        
+        // Set authorization header
+        if let tokenFunc = authToken, let token = tokenFunc() {
+            switch request.authHeader {
+            case .bearerToken:
+                urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            case .sessionToken:
+                urlRequest.setValue(token, forHTTPHeaderField: "Session-Token")
+            }
+        }
+        
+        // Set body
+        if request.method != .get {
+            if let multipartData = request.multipartBody {
+                // Handle multipart form data
+                let boundary = "Boundary-\(UUID().uuidString)"
+                urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+                urlRequest.httpBody = createMultipartBody(multipartData: multipartData, boundary: boundary)
+            } else if let array = request.array {
+                // Handle array body
+                if let jsonData = try? JSONSerialization.data(withJSONObject: array, options: []) {
+                    urlRequest.httpBody = jsonData
+                    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                }
+            } else if let bodyParameters = request.bodyParameters, !bodyParameters.isEmpty {
+                // Handle JSON body
+                if let jsonData = try? JSONSerialization.data(withJSONObject: bodyParameters, options: []) {
+                    urlRequest.httpBody = jsonData
+                    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 }
             }
         }
+        
+        return urlRequest
+    }
+    
+    private func createMultipartBody(multipartData: [EKMultipartFormData], boundary: String) -> Data {
+        var body = Data()
+        
+        for part in multipartData {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            
+            var contentDisposition = "Content-Disposition: form-data; name=\"\(part.name)\""
+            if let fileName = part.fileName {
+                contentDisposition += "; filename=\"\(fileName)\""
+            }
+            contentDisposition += "\r\n"
+            body.append(contentDisposition.data(using: .utf8)!)
+            
+            if let mimeType = part.mimeType {
+                body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+            } else {
+                body.append("\r\n".data(using: .utf8)!)
+            }
+            
+            if let data = try? part.getData() {
+                body.append(data)
+            }
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        return body
+    }
+}
+
+// MARK: - URLSession Delegate for Pulse Integration
+
+private class EKURLSessionDelegate: NSObject, URLSessionDataDelegate, URLSessionTaskDelegate {
+    let logger: NetworkLogger
+    private var dataTasks: [URLSessionTask: Data] = [:]
+    private let lock = NSLock()
+    
+    init(logger: NetworkLogger) {
+        self.logger = logger
+        super.init()
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        lock.lock()
+        defer { lock.unlock() }
+        
+        if var existingData = dataTasks[dataTask] {
+            existingData.append(data)
+            dataTasks[dataTask] = existingData
+        } else {
+            dataTasks[dataTask] = data
+        }
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        lock.lock()
+        let data = dataTasks[task]
+        dataTasks.removeValue(forKey: task)
+        lock.unlock()
+        
+        if let request = task.originalRequest, let response = task.response as? HTTPURLResponse {
+            logger.logDataTask(request, response: response, data: data ?? Data())
+        }
+        
+        logger.logTask(task, didCompleteWithError: error)
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
+        logger.logTask(task, didFinishCollecting: metrics)
     }
 }

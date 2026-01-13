@@ -6,7 +6,6 @@
 //  Copyright © 2019 Emil Karimov. All rights reserved.
 //
 
-import Moya
 import Pulse
 import PulseUI
 import CoreData
@@ -14,12 +13,12 @@ import Combine
 import SwiftUI
 import Foundation
 
+// Native types are now defined in separate files:
+// - EKMultipartFormData in EKMultipartFormData.swift
+// - EKResponse in EKResponse.swift
 #if canImport(UIKit)
 import UIKit
 #endif
-
-public typealias EKMultipartFormData = MultipartFormData
-public typealias EKResponse = Response
 
 public class LogExporter {
 
