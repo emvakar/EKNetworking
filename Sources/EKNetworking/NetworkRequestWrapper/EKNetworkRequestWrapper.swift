@@ -98,6 +98,12 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         )
     }
 
+}
+
+// MARK: - Private
+
+private extension EKNetworkRequestWrapper {
+    
     private func runWith(
         request: EKNetworkRequest,
         baseURL: String,
@@ -109,7 +115,6 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     ) {
         let requestStartTime = DispatchTime.now()
         
-        // Build URLRequest
         guard let urlRequest = buildURLRequest(
             request: request,
             baseURL: baseURL,
@@ -126,7 +131,6 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         // Store a reference to the task for logging
         weak var createdTask: URLSessionDataTask?
         
-        // Create URLSession task
         let task = urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
             guard let self = self else { return }
             
@@ -137,14 +141,11 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             if let logger = self.networkLogger, let task = createdTask {
                 let responseData = data ?? Data()
                 if response is HTTPURLResponse {
-                    // Log the response data
                     logger.logDataTask(task, didReceive: responseData)
                 }
-                // Log completion
                 logger.logTask(task, didCompleteWithError: error)
             }
             
-            // Handle error
             if let error = error {
                 let nsError = error as NSError
                 let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: data)
@@ -155,10 +156,8 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                 return
             }
             
-            // Get response data
             let responseData = data ?? Data()
             
-            // Handle HTTP response
             if let httpResponse = response as? HTTPURLResponse {
                 let ekResponse = EKResponse(statusCode: httpResponse.statusCode, data: responseData, request: urlRequest, response: httpResponse)
                 
@@ -187,8 +186,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         
         // Store task reference for closure
         createdTask = task
-        
-        // Log task creation for Pulse
+
         if let logger = networkLogger {
             logger.logTaskCreated(task)
         }
@@ -331,4 +329,5 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         return body
     }
+    
 }

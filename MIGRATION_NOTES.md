@@ -25,11 +25,12 @@ This library has been modernized by removing the **Moya** and **Alamofire** depe
 - **After**: Uses native `URLSession` directly
 - Maintains all features:
   - Timeout configuration
-  - Progress tracking (via delegate)
+  - Progress tracking (basic implementation)
   - Authorization headers (Bearer token, Session token)
   - Multipart form data uploads
   - JSON body encoding
   - Pulse logging integration
+  - **Main thread dispatch**: All completion handlers are explicitly dispatched to the main thread via `DispatchQueue.main.async`, maintaining Moya's default behavior
 
 #### `EKNetworkTarget` (Sources/EKNetworking/NetworkRequestWrapper/NetworkTarget/EKNetworkTarget.swift)
 - **Before**: Conformed to Moya's `TargetType` protocol
@@ -38,11 +39,8 @@ This library has been modernized by removing the **Moya** and **Alamofire** depe
 
 #### `EKNetworkLoggerMonitor` (Sources/EKNetworking/NetworkRequestWrapper/EKNetworkLoggerMonitor.swift)
 - **Before**: Implemented Alamofire's `EventMonitor` protocol
-- **After**: Simple struct with direct logging methods
-- Still integrates with Pulse for network logging
-
-#### `NetworkLogger+Extensions` (Sources/EKNetworking/NetworkRequestWrapper/NetworkLogger+Extensions.swift)
-- New file with extensions to support URLSession integration with Pulse
+- **After**: Retained for backward compatibility but no longer actively used
+- Pulse logging is now integrated directly in the request completion handler
 
 ### 3. Updated Files
 
@@ -126,11 +124,28 @@ The library will automatically:
 
 ## Technical Details
 
+### Threading Behavior
+**Critical difference between URLSession and Moya:**
+- **Moya/Alamofire default**: Completion handlers are called on the **main thread**
+- **Native URLSession default**: Completion handlers are called on a **background thread**
+
+**Our solution:**
+All completion handlers are explicitly wrapped with `DispatchQueue.main.async` to maintain Moya's behavior and ensure UI updates work correctly without crashes. This maintains full backward compatibility with existing code that expects to update UI directly in the completion handler.
+
 ### URLSession Configuration
 The implementation uses `URLSessionConfiguration.default` with:
 - Custom timeout intervals (configurable per request)
 - `.useProtocolCachePolicy` for caching
-- Optional delegate for Pulse logging
+- Direct Pulse logging in completion handlers
+
+### URL Parameter Encoding
+**Array handling in query parameters:**
+- **Empty arrays**: Skipped entirely (no query parameter added)
+- **Non-empty arrays**: Multiple query items with the same key
+  - Example: `["ids": [1, 2, 3]]` becomes `?ids=1&ids=2&ids=3`
+- **Other values**: Converted to string representation
+
+This matches common REST API expectations for array parameters.
 
 ### Multipart Encoding
 Multipart form data is now encoded manually using RFC 2388 format:
@@ -145,8 +160,35 @@ All Moya error types have been mapped to `EKNetworkError`:
 - Timeout errors → `.timedOut`
 - HTTP status errors → Preserved with status codes
 
+## Known Differences
+
+### Progress Tracking
+- **Moya**: Provided detailed progress callbacks via Alamofire
+- **Current**: Basic progress support (may require URLSessionTaskDelegate for full functionality)
+- **Status**: Simplified implementation sufficient for most use cases
+
+### Pulse Logging
+- **Moya**: Automatic integration via Alamofire EventMonitor
+- **Current**: Manual logging in completion handlers
+- **Status**: Fully functional, logs task creation and completion
+
+## Important Fixes Applied
+
+### 1. Array URL Parameters (Fixed)
+**Problem**: Empty arrays were encoded as `processTypeIds=(%0A)` causing server issues.
+
+**Solution**: 
+- Empty arrays are now skipped entirely
+- Non-empty arrays create multiple query items: `?ids=1&ids=2&ids=3`
+
+### 2. Main Thread Crashes (Fixed)
+**Problem**: "Call must be made on main thread" crashes when updating UI in completion handlers.
+
+**Solution**: All completion handlers are explicitly dispatched to main thread via `DispatchQueue.main.async`, matching Moya's default behavior.
+
 ## Notes
 
 - Package.resolved will be automatically updated when you build the project
 - The library still supports iOS 15+ and macOS 10.15+ as before
 - Pulse logging integration remains fully functional
+- **Threading**: Completion handlers always execute on the main thread (just like Moya)
