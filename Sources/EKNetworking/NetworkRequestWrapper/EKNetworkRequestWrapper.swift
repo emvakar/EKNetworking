@@ -40,6 +40,10 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     
     /// Network logger for Pulse integration
     private let networkLogger: NetworkLogger?
+    
+    /// Storage for progress observers to keep them alive during requests
+    private var progressObservers: [URLSessionTask: NSKeyValueObservation] = [:]
+    private let observersQueue = DispatchQueue(label: "com.eknetworking.observers")
 
     public init(logging: Logger? = nil, logEnable: Bool = false) {
         if let logging = logging {
@@ -134,6 +138,13 @@ private extension EKNetworkRequestWrapper {
         let task = urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
             guard let self = self else { return }
             
+            // Clean up progress observer when task completes
+            if let task = createdTask {
+                self.observersQueue.async {
+                    self.progressObservers.removeValue(forKey: task)
+                }
+            }
+            
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
             logger.debug("[NETWORK]: Duration is \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) sec")
@@ -177,15 +188,23 @@ private extension EKNetworkRequestWrapper {
             }
         }
         
-        // TODO: -  Setup progress tracking if needed
-        if progressResult != nil {
-            // Note: Progress tracking requires URLSessionTaskDelegate
-            // We'll need to enhance this with a delegate-based approach
-            // For now, this is a simplified implementation
-        }
-        
         // Store task reference for closure
         createdTask = task
+
+        // Setup progress tracking using KVO on the task's progress property
+        if let progressCallback = progressResult {
+            let observer = task.progress.observe(\.fractionCompleted, options: [.new]) { progress, _ in
+                // Dispatch progress updates to main thread to match Moya's behavior
+                DispatchQueue.main.async {
+                    progressCallback(progress.fractionCompleted)
+                }
+            }
+            
+            // Store observer to keep it alive during the request
+            observersQueue.async { [weak self] in
+                self?.progressObservers[task] = observer
+            }
+        }
 
         if let logger = networkLogger {
             logger.logTaskCreated(task)

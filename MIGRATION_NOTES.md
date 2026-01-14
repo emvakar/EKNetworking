@@ -163,9 +163,10 @@ All Moya error types have been mapped to `EKNetworkError`:
 ## Known Differences
 
 ### Progress Tracking
-- **Moya**: Provided detailed progress callbacks via Alamofire
-- **Current**: Basic progress support (may require URLSessionTaskDelegate for full functionality)
-- **Status**: Simplified implementation sufficient for most use cases
+- **Moya**: Provided progress callbacks via Alamofire (`progress.progress` → Double 0.0-1.0)
+- **Current**: Uses KVO observation on `URLSessionTask.progress.fractionCompleted`
+- **Implementation**: Progress callbacks dispatched to main thread, matching Moya's behavior
+- **Status**: ✅ Fully functional, maintains same signature `((Double) -> Void)?`
 
 ### Pulse Logging
 - **Moya**: Automatic integration via Alamofire EventMonitor
