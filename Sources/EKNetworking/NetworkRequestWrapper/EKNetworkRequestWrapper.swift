@@ -117,7 +117,9 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             timeoutInSeconds: timeoutInSeconds
         ) else {
             let error = EKNetworkErrorStruct(statusCode: URLError.badURL.rawValue, data: nil)
-            completion(URLError.badURL.rawValue, nil, error)
+            DispatchQueue.main.async {
+                completion(URLError.badURL.rawValue, nil, error)
+            }
             return
         }
         
@@ -147,7 +149,9 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                 let nsError = error as NSError
                 let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: data)
                 
-                completion(nsError.code, nil, networkError)
+                DispatchQueue.main.async {
+                    completion(nsError.code, nil, networkError)
+                }
                 return
             }
             
@@ -158,15 +162,19 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             if let httpResponse = response as? HTTPURLResponse {
                 let ekResponse = EKResponse(statusCode: httpResponse.statusCode, data: responseData, request: urlRequest, response: httpResponse)
                 
-                if 200...299 ~= httpResponse.statusCode {
-                    completion(httpResponse.statusCode, ekResponse, nil)
-                } else {
-                    let networkError = EKNetworkErrorStruct(statusCode: httpResponse.statusCode, data: responseData)
-                    completion(httpResponse.statusCode, nil, networkError)
+                DispatchQueue.main.async {
+                    if 200...299 ~= httpResponse.statusCode {
+                        completion(httpResponse.statusCode, ekResponse, nil)
+                    } else {
+                        let networkError = EKNetworkErrorStruct(statusCode: httpResponse.statusCode, data: responseData)
+                        completion(httpResponse.statusCode, nil, networkError)
+                    }
                 }
             } else {
                 let networkError = EKNetworkErrorStruct(statusCode: 0, data: responseData)
-                completion(0, nil, networkError)
+                DispatchQueue.main.async {
+                    completion(0, nil, networkError)
+                }
             }
         }
         
