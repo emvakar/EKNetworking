@@ -50,15 +50,13 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         // Create URLSession configuration
         let configuration = URLSessionConfiguration.default
         configuration.requestCachePolicy = .useProtocolCachePolicy
+        self.urlSession = URLSession(configuration: configuration)
         
         // Setup network logger for Pulse if logging is enabled
         if logEnable {
             self.networkLogger = NetworkLogger()
-            let delegate = EKURLSessionDelegate(logger: self.networkLogger!)
-            self.urlSession = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
         } else {
             self.networkLogger = nil
-            self.urlSession = URLSession(configuration: configuration)
         }
     }
 
@@ -123,10 +121,8 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             return
         }
         
-        // Log task creation
-        if let logger = networkLogger {
-            logger.logTaskCreated(urlRequest)
-        }
+        // Store a reference to the task for logging
+        weak var createdTask: URLSessionDataTask?
         
         // Create URLSession task
         let task = urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
@@ -135,6 +131,16 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
             logger.debug("[NETWORK]: Duration is \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) sec")
+            
+            if let logger = self.networkLogger, let task = createdTask {
+                let responseData = data ?? Data()
+                if response is HTTPURLResponse {
+                    // Log the response data
+                    logger.logDataTask(task, didReceive: responseData)
+                }
+                // Log completion
+                logger.logTask(task, didCompleteWithError: error)
+            }
             
             // Handle error
             if let error = error {
@@ -147,11 +153,6 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             
             // Get response data
             let responseData = data ?? Data()
-            
-            // Log response data
-            if let logger = self.networkLogger, let httpResponse = response as? HTTPURLResponse {
-                logger.logDataTask(urlRequest, response: httpResponse, data: responseData)
-            }
             
             // Handle HTTP response
             if let httpResponse = response as? HTTPURLResponse {
@@ -169,11 +170,19 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             }
         }
         
-        // Setup progress tracking if needed
+        // TODO: -  Setup progress tracking if needed
         if progressResult != nil {
             // Note: Progress tracking requires URLSessionTaskDelegate
             // We'll need to enhance this with a delegate-based approach
             // For now, this is a simplified implementation
+        }
+        
+        // Store task reference for closure
+        createdTask = task
+        
+        // Log task creation for Pulse
+        if let logger = networkLogger {
+            logger.logTaskCreated(task)
         }
         
         task.resume()
@@ -313,47 +322,5 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         return body
-    }
-}
-
-// MARK: - URLSession Delegate for Pulse Integration
-
-private class EKURLSessionDelegate: NSObject, URLSessionDataDelegate, URLSessionTaskDelegate {
-    let logger: NetworkLogger
-    private var dataTasks: [URLSessionTask: Data] = [:]
-    private let lock = NSLock()
-    
-    init(logger: NetworkLogger) {
-        self.logger = logger
-        super.init()
-    }
-    
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        lock.lock()
-        defer { lock.unlock() }
-        
-        if var existingData = dataTasks[dataTask] {
-            existingData.append(data)
-            dataTasks[dataTask] = existingData
-        } else {
-            dataTasks[dataTask] = data
-        }
-    }
-    
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        lock.lock()
-        let data = dataTasks[task]
-        dataTasks.removeValue(forKey: task)
-        lock.unlock()
-        
-        if let request = task.originalRequest, let response = task.response as? HTTPURLResponse {
-            logger.logDataTask(request, response: response, data: data ?? Data())
-        }
-        
-        logger.logTask(task, didCompleteWithError: error)
-    }
-    
-    func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
-        logger.logTask(task, didFinishCollecting: metrics)
     }
 }
