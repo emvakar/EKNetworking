@@ -45,16 +45,21 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     private var progressObservers: [URLSessionTask: NSKeyValueObservation] = [:]
     private let observersQueue = DispatchQueue(label: "com.eknetworking.observers")
 
-    public init(logging: Logger? = nil, logEnable: Bool = false) {
+    public init(logging: Logger? = nil, logEnable: Bool = false, session: URLSession? = nil) {
         if let logging = logging {
             logger = logging
         }
         self.logEnable = logEnable
         
-        // Create URLSession configuration
-        let configuration = URLSessionConfiguration.default
-        configuration.requestCachePolicy = .useProtocolCachePolicy
-        self.urlSession = URLSession(configuration: configuration)
+        // Use provided session or create default one
+        if let session = session {
+            self.urlSession = session
+        } else {
+            // Create URLSession configuration
+            let configuration = URLSessionConfiguration.default
+            configuration.requestCachePolicy = .useProtocolCachePolicy
+            self.urlSession = URLSession(configuration: configuration)
+        }
         
         // Setup network logger for Pulse if logging is enabled
         if logEnable {
