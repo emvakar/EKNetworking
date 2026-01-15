@@ -43,12 +43,10 @@ final class MockURLProtocol: URLProtocol {
     
     // MARK: - Setup/Teardown
     
-    /// Call this in test setUp() to enable mocking
     static func startMocking() {
         URLProtocol.registerClass(MockURLProtocol.self)
     }
     
-    /// Call this in test tearDown() to clean up
     static func stopMocking() {
         URLProtocol.unregisterClass(MockURLProtocol.self)
         mockResponses.removeAll()
