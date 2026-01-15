@@ -23,18 +23,18 @@
         "package": "Pulse",
         "repositoryURL": "https://github.com/emvakar/Pulse.git",
         "state": {
-          "branch": "main",
-          "revision": "7642539524eb831ec21488861e70fce679dfce41",
-          "version": null
+          "branch": null,
+          "revision": "f2f0efc0f6a9790791f0fe931b356d275a7b91e5",
+          "version": "5.1.5"
         }
       },
       {
         "package": "PulseLogHandler",
         "repositoryURL": "https://github.com/emvakar/PulseLogHandler.git",
         "state": {
-          "branch": "main",
-          "revision": "3a0d256bf6270286001b67de20eadc517d442e3d",
-          "version": null
+          "branch": null,
+          "revision": "284f7576b257a2fb61ae9d74b2f38034fc7be8b4",
+          "version": "5.1.1"
         }
       },
       {

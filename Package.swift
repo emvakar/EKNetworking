@@ -1,9 +1,9 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
-let package = Package(name: "EKNetworking", platforms: [.iOS(.v15), .macOS(.v10_15)],
+let package = Package(name: "EKNetworking", platforms: [.iOS(.v15), .macOS(.v13)],
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(name: "EKNetworking", targets: ["EKNetworking"]),
@@ -25,7 +25,9 @@ let package = Package(name: "EKNetworking", platforms: [.iOS(.v15), .macOS(.v10_
             .product(name: "PulseLogHandler", package: "PulseLogHandler"),
             .product(name: "Logging", package: "swift-log"),
         ], path: "Sources/EKNetworking"),
-//        .target(name: "Pulse"),
-//        .target(name: "PulseUI", dependencies: ["Pulse"]),
+        .testTarget(
+            name: "EKNetworkingTests",
+            dependencies: ["EKNetworking"]
+        )
     ]
 )

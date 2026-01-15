@@ -14,6 +14,10 @@ import Combine
 import SwiftUI
 import Foundation
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 public typealias EKMultipartFormData = MultipartFormData
 public typealias EKResponse = Response
 
@@ -40,12 +44,14 @@ public class LogExporter {
         return shareItems
     }
 
+    #if canImport(UIKit)
     public func shareLogsViewController(on viewController: UIViewController) async throws {
         if let item = try await collectLogsForSharing() {
             let shareView = await ShareView(item)
             await shareView.presentOnViewController(viewController)
         }
     }
+    #endif
 
 }
 
