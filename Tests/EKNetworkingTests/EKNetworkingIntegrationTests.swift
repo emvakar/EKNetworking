@@ -1,5 +1,5 @@
 //
-//  EKNetworkingTests.swift
+//  EKNetworkingIntegrationTests.swift
 //  EKNetworkingTests
 //
 //  Created by Egor Solovev on 14.01.2026.
@@ -10,9 +10,10 @@ import XCTest
 import Foundation
 @testable import EKNetworking
 
-/// Essential tests to verify core networking behavior
-/// Written against Moya implementation, should work with URLSession too
-final class EKNetworkingTests: XCTestCase {
+/// Integration tests that verify real network behavior against live APIs
+/// These tests are slower and may be flaky due to network conditions
+/// For fast, reliable tests, see EKNetworkingUnitTests (mocked)
+final class EKNetworkingIntegrationTests: XCTestCase {
     
     var wrapper: EKNetworkRequestWrapper!
     

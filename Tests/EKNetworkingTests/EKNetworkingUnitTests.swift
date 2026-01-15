@@ -10,8 +10,6 @@ import XCTest
 import Foundation
 @testable import EKNetworking
 
-/// Fast, reliable unit tests using mocked network responses
-/// These tests run instantly and don't require internet connection
 final class EKNetworkingUnitTests: XCTestCase {
     
     var wrapper: EKNetworkRequestWrapper!
@@ -19,20 +17,16 @@ final class EKNetworkingUnitTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        // Enable mocking
         MockURLProtocol.startMocking()
         
-        // Create URLSession with mock protocol
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
         let mockSession = URLSession(configuration: configuration)
         
-        // Inject mock session into wrapper
         wrapper = EKNetworkRequestWrapper(logEnable: false, session: mockSession)
     }
     
     override func tearDown() {
-        // Clean up mocks
         MockURLProtocol.stopMocking()
         wrapper = nil
         super.tearDown()
@@ -41,7 +35,6 @@ final class EKNetworkingUnitTests: XCTestCase {
     // MARK: - Test 1: Simple GET Request (Success)
     
     func testGETRequestSuccess() {
-        // Setup mock response
         let mockData: [String: Any] = ["id": 1, "title": "Test Post", "userId": 1]
         MockURLProtocol.mockResponses["/posts/1"] = .json(mockData, statusCode: 200)
         
@@ -55,12 +48,10 @@ final class EKNetworkingUnitTests: XCTestCase {
             progressResult: nil,
             timeoutInSeconds: 10
         ) { statusCode, response, error in
-            // Verify success
             XCTAssertEqual(statusCode, 200, "Should return 200 OK")
             XCTAssertNotNil(response, "Response should not be nil")
             XCTAssertNil(error, "Error should be nil on success")
             
-            // Verify response data
             if let responseData = response?.data,
                let json = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any] {
                 XCTAssertEqual(json["id"] as? Int, 1)
@@ -72,13 +63,12 @@ final class EKNetworkingUnitTests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 1.0) // Mocked tests complete instantly!
+        wait(for: [expectation], timeout: 1.0)
     }
     
     // MARK: - Test 2: POST Request with JSON Body
     
     func testPOSTRequestWithBody() {
-        // Setup mock response
         let mockResponse: [String: Any] = ["id": 101, "title": "Created Post", "userId": 1]
         MockURLProtocol.mockResponses["/posts"] = .json(mockResponse, statusCode: 201)
         
@@ -99,7 +89,6 @@ final class EKNetworkingUnitTests: XCTestCase {
             XCTAssertNotNil(response, "Response should not be nil")
             XCTAssertNil(error, "Error should be nil on success")
             
-            // Verify the request body was sent correctly
             if let lastRequest = MockURLProtocol.requestHistory.last,
                let bodyData = lastRequest.httpBody,
                let bodyJson = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
@@ -116,7 +105,6 @@ final class EKNetworkingUnitTests: XCTestCase {
     // MARK: - Test 3: Error Handling (404 Not Found)
     
     func testHandles404Error() {
-        // Setup mock error response
         let errorData: [String: Any] = ["error": "Not found"]
         MockURLProtocol.mockResponses["/posts/999"] = .json(errorData, statusCode: 404)
         
@@ -134,7 +122,6 @@ final class EKNetworkingUnitTests: XCTestCase {
             XCTAssertNil(response, "Response should be nil on error")
             XCTAssertNotNil(error, "Error should not be nil")
             
-            // Verify error details
             XCTAssertEqual(error?.statusCode, 404)
             XCTAssertEqual(error?.type, .notFound)
             
@@ -147,7 +134,6 @@ final class EKNetworkingUnitTests: XCTestCase {
     // MARK: - Test 4: Authorization Header (Bearer Token)
     
     func testBearerTokenHeader() {
-        // Setup mock response
         let mockData: [String: Any] = ["data": "secret"]
         MockURLProtocol.mockResponses["/protected"] = .json(mockData, statusCode: 200)
         
@@ -161,7 +147,6 @@ final class EKNetworkingUnitTests: XCTestCase {
             progressResult: nil,
             timeoutInSeconds: 10
         ) { statusCode, response, error in
-            // Verify request included auth header
             if let lastRequest = MockURLProtocol.requestHistory.last {
                 let authHeader = lastRequest.value(forHTTPHeaderField: "Authorization")
                 XCTAssertEqual(authHeader, "Bearer test-token-123", "Should include Bearer token")
@@ -179,7 +164,6 @@ final class EKNetworkingUnitTests: XCTestCase {
     // MARK: - Test 5: URL Parameters Encoding
     
     func testURLParametersEncoding() {
-        // Setup mock response
         let mockData: [[String: Any]] = [["id": 1]]
         MockURLProtocol.mockResponses["/search"] = .json(mockData, statusCode: 200)
         
@@ -196,7 +180,6 @@ final class EKNetworkingUnitTests: XCTestCase {
             progressResult: nil,
             timeoutInSeconds: 10
         ) { statusCode, response, error in
-            // Verify URL includes query parameters
             if let lastRequest = MockURLProtocol.requestHistory.last,
                let url = lastRequest.url?.absoluteString {
                 XCTAssertTrue(url.contains("userId=1"), "URL should contain userId parameter")
@@ -215,7 +198,6 @@ final class EKNetworkingUnitTests: XCTestCase {
     // MARK: - Test 6: Main Thread Completion
     
     func testCompletionOnMainThread() {
-        // Setup mock response
         let mockData: [[String: Any]] = []
         MockURLProtocol.mockResponses["/posts"] = .json(mockData, statusCode: 200)
         
