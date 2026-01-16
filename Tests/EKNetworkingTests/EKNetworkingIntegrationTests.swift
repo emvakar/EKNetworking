@@ -3,7 +3,7 @@
 //  EKNetworkingTests
 //
 //  Created by Egor Solovev on 14.01.2026.
-//  Copyright © 2026 TAXCOM. All rights reserved.
+//  Copyright © 2026 Emil Karimov. All rights reserved.
 //
 
 import XCTest

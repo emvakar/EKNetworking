@@ -11,7 +11,7 @@ import Foundation
 public extension HTTPURLResponse {
     
     /// Convenience property for accessing HTTP headers as [String: String]
-    /// Provides backward compatibility with Moya's Response.headers property
+    /// Provides backward compatibility with Moya/Alamofire's HTTPURLResponse.headers extension
     var headers: [String: String] {
         var stringHeaders: [String: String] = [:]
         for (key, value) in allHeaderFields {

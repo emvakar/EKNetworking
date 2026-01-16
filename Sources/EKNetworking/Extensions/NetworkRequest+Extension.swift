@@ -3,7 +3,7 @@
 //  EKNetworking
 //
 //  Created by Nikita Tatarnikov on 19.06.2023
-//  Copyright © 2023 TAXCOM. All rights reserved.
+//  Copyright © 2023 Emil Karimov. All rights reserved.
 //
 
 import Foundation
