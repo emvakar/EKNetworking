@@ -96,12 +96,14 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                     #if DEBUG
                     let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
                     logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                    logger.debug("[NETWORK]: Response status code: \(statusCode)")
-                    logger.debug("[NETWORK]: Response url: \(baseURL + request.path)")
-                    logger.debug("[NETWORK]: Response headers: \(request.headers ?? [:])")
-                    logger.debug("[NETWORK]: Response body: \(String(describing: body))")
+                    logger.debug("[NETWORK]: 📥 RESPONSE DETAILS")
+                    logger.debug("[NETWORK]: Status code: \(statusCode)")
+                    logger.debug("[NETWORK]: URL: \(baseURL + request.path)")
+                    logger.debug("[NETWORK]: Headers: \(response?.response?.headers ?? [:])")
+                    logger.debug("[NETWORK]: Body: \(String(describing: body))")
                     if let code = error?.errorCode, let plainBody = error?.plainBody {
-                        logger.debug("[NETWORK]: Response error code \(String(describing: code)) body: \(String(describing: plainBody))")
+                        logger.debug("[NETWORK]: Error code: \(String(describing: code))")
+                        logger.debug("[NETWORK]: Error body: \(String(describing: plainBody))")
                     }
                     logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
                     #endif
@@ -141,6 +143,22 @@ private extension EKNetworkRequestWrapper {
             }
             return
         }
+        
+        #if DEBUG
+        if showBodyResponse {
+            logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            logger.debug("[NETWORK]: 📤 REQUEST DETAILS")
+            logger.debug("[NETWORK]: Method: \(urlRequest.httpMethod ?? "N/A")")
+            logger.debug("[NETWORK]: URL: \(urlRequest.url?.absoluteString ?? "N/A")")
+            logger.debug("[NETWORK]: Headers: \(urlRequest.allHTTPHeaderFields ?? [:])")
+            if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+                logger.debug("[NETWORK]: Body: \(bodyString)")
+            } else {
+                logger.debug("[NETWORK]: Body: <none>")
+            }
+            logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+        }
+        #endif
         
         // Store a reference to the task for logging
         weak var createdTask: URLSessionDataTask?
