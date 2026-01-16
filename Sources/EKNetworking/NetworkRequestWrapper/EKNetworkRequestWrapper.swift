@@ -56,17 +56,14 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
         self.logEnable = logEnable
         self.callbackQueue = callbackQueue
         
-        // Use provided session or create default one
         if let session = session {
             self.urlSession = session
         } else {
-            // Create URLSession configuration
             let configuration = URLSessionConfiguration.default
             configuration.requestCachePolicy = .useProtocolCachePolicy
             self.urlSession = URLSession(configuration: configuration)
         }
         
-        // Setup network logger for Pulse if logging is enabled
         if logEnable {
             self.networkLogger = NetworkLogger()
         } else {
@@ -205,7 +202,7 @@ private extension EKNetworkRequestWrapper {
                         completion(httpResponse.statusCode, ekResponse, nil)
                     } else {
                         let networkError = EKNetworkErrorStruct(statusCode: httpResponse.statusCode, data: responseData)
-                        completion(httpResponse.statusCode, nil, networkError)
+                        completion(httpResponse.statusCode, ekResponse, networkError)
                     }
                 }
             } else {
