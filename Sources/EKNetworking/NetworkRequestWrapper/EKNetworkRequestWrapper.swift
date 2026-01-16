@@ -50,7 +50,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     public let callbackQueue: DispatchQueue
     
     /// Whether to redact sensitive headers (tokens, cookies) in logs
-    /// Default: true for security. Set to false only for debugging authentication issues.
+    /// Default: false. Set to true for security
     /// WARNING: Disabling this may expose sensitive tokens in logs!
     public let redactSensitiveData: Bool
 
@@ -122,10 +122,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 // MARK: - Private
 
 private extension EKNetworkRequestWrapper {
-    
-    /// Redacts sensitive header values for secure logging
-    /// - Parameter headers: Original headers dictionary
-    /// - Returns: Headers with sensitive values masked (or original if redactSensitiveData is disabled)
+
     private func redactSensitiveHeaders(_ headers: [String: String]) -> [String: String] {
         // If redaction is disabled, return headers as-is
         guard redactSensitiveData else {

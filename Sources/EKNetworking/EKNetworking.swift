@@ -13,9 +13,6 @@ import Combine
 import SwiftUI
 import Foundation
 
-// Native types are now defined in separate files:
-// - EKMultipartFormData in EKMultipartFormData.swift
-// - EKResponse in EKResponse.swift
 #if canImport(UIKit)
 import UIKit
 #endif
