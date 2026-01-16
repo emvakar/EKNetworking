@@ -812,6 +812,59 @@ final class EKNetworkingUnitTests: XCTestCase {
         
         wait(for: [expectation], timeout: 1.0)
     }
+    
+    // MARK: - Test 26: POST Without Body Parameters Sends Empty JSON Object
+    
+    func testPOSTWithoutBodyParametersSendsEmptyJSON() {
+        let mockResponse: [String: Any] = ["success": true]
+        MockURLProtocol.mockResponses["/action"] = .json(mockResponse, statusCode: 200)
+        
+        let expectation = XCTestExpectation(description: "POST without body sends {}")
+        let request = MockEmptyPOSTRequest(path: "/action")
+        
+        wrapper.runRequest(
+            request: request,
+            baseURL: "https://api.example.com",
+            authToken: nil,
+            progressResult: nil,
+            timeoutInSeconds: 10
+        ) { statusCode, response, error in
+            XCTAssertEqual(statusCode, 200)
+            XCTAssertNotNil(response, "Response should not be nil")
+            XCTAssertNil(error, "Error should be nil on success")
+            
+            // Verify the request was sent with empty JSON body
+            if let lastRequest = MockURLProtocol.requestHistory.last {
+                // Check Content-Type header
+                let contentType = lastRequest.value(forHTTPHeaderField: "Content-Type")
+                XCTAssertEqual(contentType, "application/json", "Content-Type should be application/json")
+                
+                // Check body is empty JSON object {}
+                if let bodyData = lastRequest.httpBody {
+                    XCTAssertFalse(bodyData.isEmpty, "Body should not be empty")
+                    
+                    // Parse the body to verify it's {}
+                    if let bodyJson = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
+                        XCTAssertTrue(bodyJson.isEmpty, "Body should be empty JSON object {}")
+                    } else {
+                        XCTFail("Body should be valid JSON")
+                    }
+                    
+                    // Also verify the body string is "{}"
+                    let bodyString = String(data: bodyData, encoding: .utf8)
+                    XCTAssertEqual(bodyString, "{}", "Body should be exactly '{}'")
+                } else {
+                    XCTFail("POST request should have a body")
+                }
+            } else {
+                XCTFail("No request was captured")
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
 }
 
 // MARK: - Mock Error Delegate
@@ -989,5 +1042,24 @@ private struct MockCustomHeadersRequest: EKNetworkRequest {
     init(path: String, customHeaders: [String: String]) {
         self.path = path
         self.customHeaders = customHeaders
+    }
+}
+
+private struct MockEmptyPOSTRequest: EKNetworkRequest {
+    let path: String
+    
+    var method: EKRequestHTTPMethod { .post }
+    var urlParameters: [String: Any]? { nil }
+    var bodyParameters: [String: Any]? { nil }  // No body parameters
+    var headers: [String: String]? { nil }
+    var array: [Any]? { nil }
+    var multipartBody: [EKMultipartFormData]? { nil }
+    var authHeader: AuthHeader { .bearerToken }
+    
+    init(from decoder: Decoder) throws { fatalError("Not implemented") }
+    func encode(to encoder: Encoder) throws { }
+    
+    init(path: String) {
+        self.path = path
     }
 }
