@@ -48,13 +48,19 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// Whether to dispatch completion handlers to main thread
     /// Default: true (maintains Moya's behavior for backward compatibility)
     public let callbackQueue: DispatchQueue
+    
+    /// Whether to redact sensitive headers (tokens, cookies) in logs
+    /// Default: true for security. Set to false only for debugging authentication issues.
+    /// WARNING: Disabling this may expose sensitive tokens in logs!
+    public let redactSensitiveData: Bool
 
-    public init(logging: Logger? = nil, logEnable: Bool = false, session: URLSession? = nil, callbackQueue: DispatchQueue = .main) {
+    public init(logging: Logger? = nil, logEnable: Bool = false, session: URLSession? = nil, callbackQueue: DispatchQueue = .main, redactSensitiveData: Bool = false) {
         if let logging = logging {
             logger = logging
         }
         self.logEnable = logEnable
         self.callbackQueue = callbackQueue
+        self.redactSensitiveData = redactSensitiveData
         
         if let session = session {
             self.urlSession = session
@@ -96,7 +102,7 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                     logger.debug("[NETWORK]: 📥 RESPONSE DETAILS")
                     logger.debug("[NETWORK]: Status code: \(statusCode)")
                     logger.debug("[NETWORK]: URL: \(baseURL + request.path)")
-                    logger.debug("[NETWORK]: Headers: \(response?.response?.headers ?? [:])")
+                    logger.debug("[NETWORK]: Headers: \(self.redactSensitiveHeaders(response?.response?.headers ?? [:]))")
                     logger.debug("[NETWORK]: Body: \(String(describing: body))")
                     if let code = error?.errorCode, let plainBody = error?.plainBody {
                         logger.debug("[NETWORK]: Error code: \(String(describing: code))")
@@ -116,6 +122,33 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 // MARK: - Private
 
 private extension EKNetworkRequestWrapper {
+    
+    /// Redacts sensitive header values for secure logging
+    /// - Parameter headers: Original headers dictionary
+    /// - Returns: Headers with sensitive values masked (or original if redactSensitiveData is disabled)
+    private func redactSensitiveHeaders(_ headers: [String: String]) -> [String: String] {
+        // If redaction is disabled, return headers as-is
+        guard redactSensitiveData else {
+            return headers
+        }
+        
+        let sensitiveKeys = [
+            "Authorization",
+            "Session-Token",
+            "X-Auth-Token",
+            "X-API-Key",
+            "Cookie",
+            "Set-Cookie"
+        ]
+        
+        var redacted = headers
+        for key in headers.keys {
+            if sensitiveKeys.contains(where: { $0.lowercased() == key.lowercased() }) {
+                redacted[key] = "***REDACTED***"
+            }
+        }
+        return redacted
+    }
     
     private func runWith(
         request: EKNetworkRequest,
@@ -147,7 +180,7 @@ private extension EKNetworkRequestWrapper {
             logger.debug("[NETWORK]: 📤 REQUEST DETAILS")
             logger.debug("[NETWORK]: Method: \(urlRequest.httpMethod ?? "N/A")")
             logger.debug("[NETWORK]: URL: \(urlRequest.url?.absoluteString ?? "N/A")")
-            logger.debug("[NETWORK]: Headers: \(urlRequest.allHTTPHeaderFields ?? [:])")
+            logger.debug("[NETWORK]: Headers: \(redactSensitiveHeaders(urlRequest.allHTTPHeaderFields ?? [:]))")
             if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
                 logger.debug("[NETWORK]: Body: \(bodyString)")
             } else {
