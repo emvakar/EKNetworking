@@ -737,6 +737,42 @@ final class EKNetworkingUnitTests: XCTestCase {
         wait(for: [exp1, exp2, exp3], timeout: 2.0)
         XCTAssertEqual(MockURLProtocol.requestHistory.count, 3)
     }
+    
+    // MARK: - Test 24: Custom Background Callback Queue
+    
+    func testCustomBackgroundCallbackQueue() {
+        let mockData: [String: Any] = ["id": 1]
+        MockURLProtocol.mockResponses["/posts/1"] = .json(mockData, statusCode: 200)
+        
+        let expectation = XCTestExpectation(description: "Background queue callback")
+        let backgroundQueue = DispatchQueue(label: "com.test.background")
+        
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let mockSession = URLSession(configuration: configuration)
+        
+        let backgroundWrapper = EKNetworkRequestWrapper(
+            logEnable: false,
+            session: mockSession,
+            callbackQueue: backgroundQueue
+        )
+        
+        let request = MockGETRequest(path: "/posts/1")
+        
+        backgroundWrapper.runRequest(
+            request: request,
+            baseURL: "https://api.example.com",
+            authToken: nil,
+            progressResult: nil,
+            timeoutInSeconds: 10
+        ) { statusCode, response, error in
+            XCTAssertFalse(Thread.isMainThread, "Should be on background queue")
+            XCTAssertEqual(statusCode, 200)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
 }
 
 // MARK: - Mock Error Delegate

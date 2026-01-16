@@ -44,12 +44,17 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// Storage for progress observers to keep them alive during requests
     private var progressObservers: [URLSessionTask: NSKeyValueObservation] = [:]
     private let observersQueue = DispatchQueue(label: "com.eknetworking.observers")
+    
+    /// Whether to dispatch completion handlers to main thread
+    /// Default: true (maintains Moya's behavior for backward compatibility)
+    public let callbackQueue: DispatchQueue
 
-    public init(logging: Logger? = nil, logEnable: Bool = false, session: URLSession? = nil) {
+    public init(logging: Logger? = nil, logEnable: Bool = false, session: URLSession? = nil, callbackQueue: DispatchQueue = .main) {
         if let logging = logging {
             logger = logging
         }
         self.logEnable = logEnable
+        self.callbackQueue = callbackQueue
         
         // Use provided session or create default one
         if let session = session {
@@ -131,7 +136,7 @@ private extension EKNetworkRequestWrapper {
             timeoutInSeconds: timeoutInSeconds
         ) else {
             let error = EKNetworkErrorStruct(statusCode: URLError.badURL.rawValue, data: nil)
-            DispatchQueue.main.async {
+            callbackQueue.async {
                 completion(URLError.badURL.rawValue, nil, error)
             }
             return
@@ -166,7 +171,7 @@ private extension EKNetworkRequestWrapper {
                 let nsError = error as NSError
                 let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: data)
                 
-                DispatchQueue.main.async {
+                self.callbackQueue.async {
                     completion(nsError.code, nil, networkError)
                 }
                 return
@@ -177,7 +182,7 @@ private extension EKNetworkRequestWrapper {
             if let httpResponse = response as? HTTPURLResponse {
                 let ekResponse = EKResponse(statusCode: httpResponse.statusCode, data: responseData, request: urlRequest, response: httpResponse)
                 
-                DispatchQueue.main.async {
+                self.callbackQueue.async {
                     if 200...299 ~= httpResponse.statusCode {
                         completion(httpResponse.statusCode, ekResponse, nil)
                     } else {
@@ -187,7 +192,7 @@ private extension EKNetworkRequestWrapper {
                 }
             } else {
                 let networkError = EKNetworkErrorStruct(statusCode: 0, data: responseData)
-                DispatchQueue.main.async {
+                self.callbackQueue.async {
                     completion(0, nil, networkError)
                 }
             }
@@ -198,9 +203,9 @@ private extension EKNetworkRequestWrapper {
 
         // Setup progress tracking using KVO on the task's progress property
         if let progressCallback = progressResult {
-            let observer = task.progress.observe(\.fractionCompleted, options: [.new]) { progress, _ in
-                // Dispatch progress updates to main thread to match Moya's behavior
-                DispatchQueue.main.async {
+            let observer = task.progress.observe(\.fractionCompleted, options: [.new]) { [weak self] progress, _ in
+                // Dispatch progress updates to callback queue
+                self?.callbackQueue.async {
                     progressCallback(progress.fractionCompleted)
                 }
             }
