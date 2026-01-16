@@ -773,6 +773,45 @@ final class EKNetworkingUnitTests: XCTestCase {
         
         wait(for: [expectation], timeout: 1.0)
     }
+    
+    // MARK: - Test 25: HTTPURLResponse Headers Extension (Moya Compatibility)
+    
+    func testHTTPURLResponseHeadersExtension() {
+        let mockData: [String: Any] = ["data": "test"]
+        let customHeaders = ["Content-Type": "application/json", "X-Custom-Header": "TestValue", "Dss-Token-Expires-Seconds": "0"]
+        MockURLProtocol.mockResponses["/api"] = MockURLProtocol.MockResponse(
+            data: (try? JSONSerialization.data(withJSONObject: mockData)) ?? Data(),
+            statusCode: 200,
+            headers: customHeaders
+        )
+        
+        let expectation = XCTestExpectation(description: "HTTPURLResponse headers accessible")
+        let request = MockGETRequest(path: "/api")
+        
+        wrapper.runRequest(
+            request: request,
+            baseURL: "https://api.example.com",
+            authToken: nil,
+            progressResult: nil,
+            timeoutInSeconds: 10
+        ) { statusCode, response, error in
+            XCTAssertEqual(statusCode, 200)
+            
+            // Test HTTPURLResponse.headers extension (Moya compatibility)
+            if let httpResponse = response?.response {
+                XCTAssertEqual(httpResponse.headers["Content-Type"], "application/json")
+                XCTAssertEqual(httpResponse.headers["X-Custom-Header"], "TestValue")
+                XCTAssertEqual(httpResponse.headers["Dss-Token-Expires-Seconds"], "0")
+                XCTAssertFalse(httpResponse.headers.isEmpty)
+            } else {
+                XCTFail("HTTPURLResponse should not be nil")
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
 }
 
 // MARK: - Mock Error Delegate

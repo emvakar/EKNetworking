@@ -40,7 +40,14 @@ This library has been modernized by removing the **Moya** and **Alamofire** depe
 - Removed all Moya-specific task definitions
 - No longer depends on Moya
 
-### 3. Updated Files
+### 3. New Extensions
+
+#### `HTTPURLResponse+Extension.swift` (Sources/EKNetworking/Extensions/)
+- **Added**: `headers` property for Moya compatibility
+- Maps `allHeaderFields` to `[String: String]` for convenient access
+- Allows existing code using `response.headers["Header-Name"]` to work without changes
+
+### 4. Updated Files
 
 #### `Package.swift`
 - **Removed**: Moya dependency
@@ -54,7 +61,7 @@ This library has been modernized by removing the **Moya** and **Alamofire** depe
 - Native types are now in separate files
 - **Added**: Conditional UIKit import for platform compatibility
 
-### 4. Removed Files
+### 5. Removed Files
 
 #### `EKNetworkLoggerMonitor.swift`
 - **Completely removed** (not just unused)
@@ -65,6 +72,25 @@ This library has been modernized by removing the **Moya** and **Alamofire** depe
 
 ### ✅ Fully Compatible
 All public APIs remain unchanged:
+
+#### HTTPURLResponse Headers
+
+**Moya compatibility:** Added `headers` extension to `HTTPURLResponse`:
+
+```swift
+// Works exactly like Moya
+response?.headers["Content-Type"]
+response?.headers["Dss-Token-Expires-Seconds"]
+
+// No need to change from:
+// response?.headers["Header-Name"]
+// to:
+// response?.allHeaderFields["Header-Name"] as? String
+```
+
+This extension is included in the library, so all your existing code using `.headers` will work without modification.
+
+#### Creating the Wrapper
 
 ```swift
 // Creating the network wrapper
