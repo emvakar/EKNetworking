@@ -6,7 +6,6 @@
 //  Copyright © 2019 Emil Karimov. All rights reserved.
 //
 
-import Moya
 import Pulse
 import PulseUI
 import CoreData
@@ -14,8 +13,9 @@ import Combine
 import SwiftUI
 import Foundation
 
-public typealias EKMultipartFormData = MultipartFormData
-public typealias EKResponse = Response
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public class LogExporter {
 
@@ -40,12 +40,14 @@ public class LogExporter {
         return shareItems
     }
 
+    #if canImport(UIKit)
     public func shareLogsViewController(on viewController: UIViewController) async throws {
         if let item = try await collectLogsForSharing() {
             let shareView = await ShareView(item)
             await shareView.presentOnViewController(viewController)
         }
     }
+    #endif
 
 }
 

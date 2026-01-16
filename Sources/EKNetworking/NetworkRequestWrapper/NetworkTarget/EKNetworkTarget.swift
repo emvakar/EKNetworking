@@ -6,9 +6,9 @@
 //  Copyright © 2019 Emil Karimov. All rights reserved.
 //
 
-import Moya
 import Foundation
 
+/// Common HTTP header keys used in network requests
 public enum EKHeadersKey: String {
 
     case content_type = "Content-Type"
@@ -29,10 +29,13 @@ public enum EKHeadersKey: String {
 
 }
 
-struct EKNetworkTarget: TargetType {
+/// Internal target helper (kept for backward compatibility, but no longer uses Moya)
+/// This struct is now primarily used as a data holder during request construction
+struct EKNetworkTarget {
 
     let apiRequest: EKNetworkRequest
     let tokenFunction: (() -> String?)?
+    let baseURL: URL
 
     init(request: EKNetworkRequest, tokenFunction: (() -> String?)?, baseURL: String) {
         apiRequest = request
@@ -40,58 +43,13 @@ struct EKNetworkTarget: TargetType {
         self.baseURL = URL(string: baseURL)! // swiftlint:disable:this force_unwrapping
     }
 
-    var baseURL: URL
-
     /// URL path
     var path: String {
         return apiRequest.path
     }
 
-    ///  Method
-    var method: Moya.Method {
-        switch apiRequest.method {
-        case .get:       return .get
-        case .post:      return .post
-        case .multiple:  return .post
-        case .put:       return .put
-        case .delete:    return .delete
-        case .patch:     return .patch
-        case .options:   return .options
-        case .head:      return .head
-        case .trace:     return .trace
-        case .connect:   return .connect
-        }
-    }
-
-    /// для мок реализации запроса в юнит тестах (если потребуется, то поменять)
-    var sampleData: Data {
-        return Data()
-    }
-
-    var task: Task {
-        switch apiRequest.method {
-        case .get:
-            guard let urlParameters = apiRequest.urlParameters else {
-                return .requestPlain
-            }
-            return urlParameters.isEmpty ? .requestPlain : .requestParameters(parameters: urlParameters, encoding: URLEncoding.default)
-        case .post, .multiple, .put, .delete, .patch, .options, .head, .trace, .connect:
-            if let multipart = apiRequest.multipartBody {
-                return .uploadCompositeMultipart(multipart,
-                                                 urlParameters: apiRequest.urlParameters ?? [:])
-            }
-            if let jsonArray = apiRequest.array,
-               let arrayData = try? JSONSerialization.data(withJSONObject: jsonArray) {
-                return .requestCompositeData(bodyData: arrayData, urlParameters: apiRequest.urlParameters ?? [:])
-            }
-            return .requestCompositeParameters(bodyParameters: (apiRequest.bodyParameters ?? [:]),
-                                               bodyEncoding: JSONEncoding.default,
-                                               urlParameters: apiRequest.urlParameters ?? [:])
-        }
-    }
-
+    /// Headers including authorization
     var headers: [String: String]? {
-
         var dictionary = [String: String]()
         if let value = apiRequest.headers {
             value.forEach { dictionary.updateValue($0.value, forKey: $0.key) }
