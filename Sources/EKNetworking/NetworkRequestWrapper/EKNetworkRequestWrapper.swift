@@ -18,6 +18,16 @@ public protocol EKNetworkRequestWrapperProtocol {
                     showBodyResponse: Bool,
                     timeoutInSeconds: TimeInterval,
                     completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void)
+    
+    /// Async version of runRequest using Swift concurrency
+    /// - Note: Default implementation provided in protocol extension
+    @available(iOS 13.0, macOS 10.15, *)
+    func runRequest(request: EKNetworkRequest,
+                    baseURL: String,
+                    authToken: (() -> String?)?,
+                    progressResult: ((Double) -> Void)?,
+                    showBodyResponse: Bool,
+                    timeoutInSeconds: TimeInterval) async throws -> EKResponse
 
 }
 

@@ -1,5 +1,5 @@
 //
-//  EKNetworkRequestWrapper+Async.swift
+//  EKNetworkRequestWrapperProtocol+Async.swift
 //  EKNetworking
 //
 //  Created by Egor Solovev on 16.01.2026.
@@ -10,8 +10,9 @@ import Foundation
 
 // MARK: - Swift Concurrency Support
 
+/// Default implementation of async method for all protocol conformers
 @available(iOS 13.0, macOS 10.15, *)
-public extension EKNetworkRequestWrapper {
+public extension EKNetworkRequestWrapperProtocol {
     
     /// Async version of runRequest using modern Swift concurrency
     ///

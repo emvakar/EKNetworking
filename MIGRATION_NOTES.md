@@ -18,6 +18,7 @@ Migrated from **Moya + Alamofire** to **native URLSession** with **zero breaking
 - `EKMultipartFormData` - Native replacement for Moya's MultipartFormData
 
 ### Added Features
+- ✅ **Swift Concurrency (async/await)** - Modern async API available through protocol
 - ✅ **HTTPURLResponse.headers extension** - Moya compatibility (`response?.headers["Header-Name"]`)
 - ✅ **Configurable callback queue** - Main (default) or background thread
 - ✅ **Sensitive header redaction** - Security for logs (tokens, cookies)
@@ -43,7 +44,7 @@ Migrated from **Moya + Alamofire** to **native URLSession** with **zero breaking
 
 ## Usage
 
-### Basic (unchanged)
+### Option 1: Completion Handlers (original, unchanged)
 ```swift
 let wrapper = EKNetworkRequestWrapper(logEnable: true)
 
@@ -54,11 +55,35 @@ wrapper.runRequest(
     progressResult: { progress in print(progress) },
     timeoutInSeconds: 30
 ) { statusCode, response, error in
-    // response?.headers["Content-Type"] - Still works!
+    if let error = error {
+        print("Error: \(error)")
+    } else if let response = response {
+        // response?.headers["Content-Type"] - Still works!
+        print("Success: \(response.statusCode)")
+    }
 }
 ```
 
-### New Options (optional)
+### Option 2: Async/Await (NEW! ⭐️)
+```swift
+// Works through the protocol!
+let wrapper: EKNetworkRequestWrapperProtocol = EKNetworkRequestWrapper(logEnable: true)
+
+do {
+    let response = try await wrapper.runRequest(
+        request: myRequest,
+        baseURL: "https://api.example.com",
+        authToken: { "token" },
+        timeoutInSeconds: 30
+    )
+    print("Success: \(response.statusCode)")
+    // response.headers["Content-Type"] - Still works!
+} catch let error as EKNetworkError {
+    print("Error: \(error.type)")
+}
+```
+
+### Advanced Options
 ```swift
 // Disable log redaction (for debugging only)
 let wrapper = EKNetworkRequestWrapper(
@@ -66,7 +91,7 @@ let wrapper = EKNetworkRequestWrapper(
     redactSensitiveData: false  // Show real tokens in logs
 )
 
-// Background thread callbacks
+// Background thread callbacks (completion handler version only)
 let wrapper = EKNetworkRequestWrapper(
     callbackQueue: .global()  // Default is .main
 )
@@ -77,16 +102,64 @@ let wrapper = EKNetworkRequestWrapper(
 )
 ```
 
+### Async/Await Advanced Examples
+
+**Multiple concurrent requests:**
+```swift
+async let user = try wrapper.runRequest(
+    request: GetUserRequest(),
+    baseURL: baseURL,
+    timeoutInSeconds: 30
+)
+
+async let posts = try wrapper.runRequest(
+    request: GetPostsRequest(),
+    baseURL: baseURL,
+    timeoutInSeconds: 30
+)
+
+let (userData, postsData) = try await (user, posts)
+```
+
+**Using Task Groups:**
+```swift
+let responses = try await withThrowingTaskGroup(of: EKResponse.self) { group in
+    for id in 1...10 {
+        group.addTask {
+            try await wrapper.runRequest(
+                request: GetPostRequest(id: id),
+                baseURL: baseURL,
+                timeoutInSeconds: 30
+            )
+        }
+    }
+    
+    var results: [EKResponse] = []
+    for try await response in group {
+        results.append(response)
+    }
+    return results
+}
+```
+
 ---
 
 ## Tests
 
-**31 comprehensive tests** - All passing ✅
-- 26 unit tests (mocked, fast)
+**41 comprehensive tests** - All passing ✅
+- 26 unit tests (completion handlers, mocked, fast)
+- 10 async/await tests (mocked, fast)
 - 5 integration tests (real API, smoke tests)
 
 ```bash
-swift test  # Run all tests
+# Run all tests
+swift test
+
+# Run only async tests
+swift test --filter EKNetworkingAsyncTests
+
+# Run only completion handler tests
+swift test --filter EKNetworkingUnitTests
 ```
 
 ---
