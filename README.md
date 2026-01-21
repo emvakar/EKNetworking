@@ -10,6 +10,40 @@
     .package(url: "https://github.com/emvakar/EKNetworking.git", from: "2.0.0")
 ```
 
+## Network Logging (Optional)
+
+EKNetworking supports pluggable network logging via dependency injection. By default, no logging is performed.
+
+### Using Pulse Logger (Optional)
+
+Pulse logger: https://github.com/emvakar/EKPulse.git
+
+```swift
+import EKNetworking
+
+// Create Pulse logger
+let pulseLogger = EKPulseNetworkLogger()
+
+// Inject it into the network wrapper
+let networkWrapper = EKNetworkRequestWrapper(
+    networkLogger: pulseLogger
+)
+```
+
+### Custom Logger Implementation
+
+You can implement your own logger by conforming to `EKNetworkLoggerProtocol`:
+
+```swift
+class MyCustomLogger: EKNetworkLoggerProtocol {
+    func logTaskCreated(_ task: URLSessionTask) { /* ... */ }
+    func logDataTask(_ task: URLSessionTask, didReceive data: Data) { /* ... */ }
+    func logTask(_ task: URLSessionTask, didCompleteWithError error: Error?) { /* ... */ }
+}
+```
+
+📖 For more details on logging and Pulse integration, see [PULSE_MIGRATION_GUIDE.md](PULSE_MIGRATION_GUIDE.md)
+
 ## Usage
 
 > File: `NetworkRequestProvider.swift`

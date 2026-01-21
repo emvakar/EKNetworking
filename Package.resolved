@@ -1,34 +1,14 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "Pulse",
-        "repositoryURL": "https://github.com/emvakar/Pulse.git",
-        "state": {
-          "branch": null,
-          "revision": "f2f0efc0f6a9790791f0fe931b356d275a7b91e5",
-          "version": "5.1.5"
-        }
-      },
-      {
-        "package": "PulseLogHandler",
-        "repositoryURL": "https://github.com/emvakar/PulseLogHandler.git",
-        "state": {
-          "branch": null,
-          "revision": "284f7576b257a2fb61ae9d74b2f38034fc7be8b4",
-          "version": "5.1.1"
-        }
-      },
-      {
-        "package": "swift-log",
-        "repositoryURL": "https://github.com/apple/swift-log.git",
-        "state": {
-          "branch": null,
-          "revision": "e97a6fcb1ab07462881ac165fdbb37f067e205d5",
-          "version": "1.5.4"
-        }
+  "pins" : [
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log.git",
+      "state" : {
+        "revision" : "e97a6fcb1ab07462881ac165fdbb37f067e205d5",
+        "version" : "1.5.4"
       }
-    ]
-  },
-  "version": 1
+    }
+  ],
+  "version" : 2
 }

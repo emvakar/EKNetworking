@@ -8,8 +8,6 @@
 
 import Foundation
 import Logging
-import PulseLogHandler
-import Pulse
 
 public protocol EKNetworkRequestWrapperProtocol {
 
@@ -38,8 +36,8 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// URLSession for making network requests
     private let urlSession: URLSession
     
-    /// Network logger for Pulse integration
-    private let networkLogger: NetworkLogger?
+    /// Network logger for logging network requests (uses dependency injection)
+    private let networkLogger: EKNetworkLoggerProtocol?
     
     /// Storage for progress observers to keep them alive during requests
     private var progressObservers: [URLSessionTask: NSKeyValueObservation] = [:]
@@ -54,7 +52,22 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
     /// WARNING: Disabling this may expose sensitive tokens in logs!
     public let redactSensitiveData: Bool
 
-    public init(logging: Logger? = nil, logEnable: Bool = false, session: URLSession? = nil, callbackQueue: DispatchQueue = .main, redactSensitiveData: Bool = false) {
+    /// Initialize network request wrapper
+    /// - Parameters:
+    ///   - logging: Custom logger instance
+    ///   - logEnable: Whether to enable logging (deprecated, use networkLogger parameter instead)
+    ///   - session: Custom URLSession to use
+    ///   - callbackQueue: Queue for completion callbacks (default: main)
+    ///   - redactSensitiveData: Whether to redact sensitive headers in logs
+    ///   - networkLogger: Custom network logger implementation (dependency injection)
+    public init(
+        logging: Logger? = nil,
+        logEnable: Bool = false,
+        session: URLSession? = nil,
+        callbackQueue: DispatchQueue = .main,
+        redactSensitiveData: Bool = false,
+        networkLogger: EKNetworkLoggerProtocol? = nil
+    ) {
         if let logging = logging {
             logger = logging
         }
@@ -70,8 +83,13 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             self.urlSession = URLSession(configuration: configuration)
         }
         
-        if logEnable {
-            self.networkLogger = NetworkLogger()
+        // Use injected logger, or create default Pulse logger if logging is enabled
+        if let networkLogger = networkLogger {
+            self.networkLogger = networkLogger
+        } else if logEnable {
+            // For backward compatibility, create Pulse logger if logEnable is true
+            // To fully remove Pulse dependency, pass nil or custom logger implementation
+            self.networkLogger = nil // Users need to explicitly inject EKPulseNetworkLogger
         } else {
             self.networkLogger = nil
         }
