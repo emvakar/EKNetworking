@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import Logging
+import os.log
 
 public protocol EKNetworkRequestWrapperProtocol {
 
@@ -31,13 +31,16 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
     /// Error handler Delegate
     public weak var delegate: EKErrorHandleDelegate?
-    public var logEnable: Bool
+    public var consoleLogEnable: Bool
     
     /// URLSession for making network requests
     private let urlSession: URLSession
     
-    /// Network logger for logging network requests (uses dependency injection)
+    /// Network logger for logging network requests
     private let networkLogger: EKNetworkLoggerProtocol?
+    
+    /// OSLog for console logging
+    private let osLogger: OSLog
     
     /// Storage for progress observers to keep them alive during requests
     private var progressObservers: [URLSessionTask: NSKeyValueObservation] = [:]
@@ -54,26 +57,23 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
 
     /// Initialize network request wrapper
     /// - Parameters:
-    ///   - logging: Custom logger instance
-    ///   - logEnable: Whether to enable logging (deprecated, use networkLogger parameter instead)
+    ///   - consoleLogEnable: Whether to enable console logging using OSLog
     ///   - session: Custom URLSession to use
     ///   - callbackQueue: Queue for completion callbacks (default: main)
     ///   - redactSensitiveData: Whether to redact sensitive headers in logs
-    ///   - networkLogger: Custom network logger implementation (dependency injection)
+    ///   - networkLogger: Custom network logger implementation
     public init(
-        logging: Logger? = nil,
-        logEnable: Bool = false,
+        consoleLogEnable: Bool = false,
         session: URLSession? = nil,
         callbackQueue: DispatchQueue = .main,
         redactSensitiveData: Bool = false,
         networkLogger: EKNetworkLoggerProtocol? = nil
     ) {
-        if let logging = logging {
-            logger = logging
-        }
-        self.logEnable = logEnable
+        self.consoleLogEnable = consoleLogEnable
         self.callbackQueue = callbackQueue
         self.redactSensitiveData = redactSensitiveData
+        self.networkLogger = networkLogger
+        self.osLogger = OSLog(subsystem: "com.eknetworking.network", category: "requests")
         
         if let session = session {
             self.urlSession = session
@@ -81,17 +81,6 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             let configuration = URLSessionConfiguration.default
             configuration.requestCachePolicy = .useProtocolCachePolicy
             self.urlSession = URLSession(configuration: configuration)
-        }
-        
-        // Use injected logger, or create default Pulse logger if logging is enabled
-        if let networkLogger = networkLogger {
-            self.networkLogger = networkLogger
-        } else if logEnable {
-            // For backward compatibility, create Pulse logger if logEnable is true
-            // To fully remove Pulse dependency, pass nil or custom logger implementation
-            self.networkLogger = nil // Users need to explicitly inject EKPulseNetworkLogger
-        } else {
-            self.networkLogger = nil
         }
     }
 
@@ -103,7 +92,9 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
                          timeoutInSeconds: TimeInterval,
                          completion: @escaping(_ statusCode: Int, _ response: EKResponse?, _ error: EKNetworkError?) -> Void) {
 
-        logger.debug("[NETWORK]: Start request to \(baseURL)\(request.path)")
+        if consoleLogEnable {
+            os_log(.debug, log: osLogger, "Start request to %{public}@%{public}@", baseURL, request.path)
+        }
         
         self.runWith(
             request: request,
@@ -113,21 +104,19 @@ open class EKNetworkRequestWrapper: EKNetworkRequestWrapperProtocol {
             showBodyResponse: showBodyResponse,
             timeoutInSeconds: timeoutInSeconds,
             completion: { (statusCode, response, error) in
-                if showBodyResponse {
-                    #if DEBUG
+                if showBodyResponse && self.consoleLogEnable {
                     let body: String = response.map { String(data: $0.data, encoding: .utf8) ?? "" } ?? ""
-                    logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                    logger.debug("[NETWORK]: 📥 RESPONSE DETAILS")
-                    logger.debug("[NETWORK]: Status code: \(statusCode)")
-                    logger.debug("[NETWORK]: URL: \(baseURL + request.path)")
-                    logger.debug("[NETWORK]: Headers: \(self.redactSensitiveHeaders(response?.response?.headers ?? [:]))")
-                    logger.debug("[NETWORK]: Body: \(String(describing: body))")
+                    os_log(.debug, log: self.osLogger, "════════════════════════════════════════")
+                    os_log(.debug, log: self.osLogger, "📥 RESPONSE DETAILS")
+                    os_log(.debug, log: self.osLogger, "Status code: %d", statusCode)
+                    os_log(.debug, log: self.osLogger, "URL: %{public}@", baseURL + request.path)
+                    os_log(.debug, log: self.osLogger, "Headers: %{public}@", String(describing: self.redactSensitiveHeaders(response?.response?.headers ?? [:])))
+                    os_log(.debug, log: self.osLogger, "Body: %{public}@", body)
                     if let code = error?.errorCode, let plainBody = error?.plainBody {
-                        logger.debug("[NETWORK]: Error code: \(String(describing: code))")
-                        logger.debug("[NETWORK]: Error body: \(String(describing: plainBody))")
+                        os_log(.debug, log: self.osLogger, "Error code: %d", code)
+                        os_log(.debug, log: self.osLogger, "Error body: %{public}@", plainBody)
                     }
-                    logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-                    #endif
+                    os_log(.debug, log: self.osLogger, "════════════════════════════════════════")
                 }
                 self.delegate?.handle(error: error, statusCode: statusCode)
                 completion(statusCode, response, error)
@@ -189,21 +178,19 @@ private extension EKNetworkRequestWrapper {
             return
         }
         
-        #if DEBUG
-        if showBodyResponse {
-            logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            logger.debug("[NETWORK]: 📤 REQUEST DETAILS")
-            logger.debug("[NETWORK]: Method: \(urlRequest.httpMethod ?? "N/A")")
-            logger.debug("[NETWORK]: URL: \(urlRequest.url?.absoluteString ?? "N/A")")
-            logger.debug("[NETWORK]: Headers: \(redactSensitiveHeaders(urlRequest.allHTTPHeaderFields ?? [:]))")
+        if showBodyResponse && consoleLogEnable {
+            os_log(.debug, log: osLogger, "════════════════════════════════════════")
+            os_log(.debug, log: osLogger, "📤 REQUEST DETAILS")
+            os_log(.debug, log: osLogger, "Method: %{public}@", urlRequest.httpMethod ?? "N/A")
+            os_log(.debug, log: osLogger, "URL: %{public}@", urlRequest.url?.absoluteString ?? "N/A")
+            os_log(.debug, log: osLogger, "Headers: %{public}@", String(describing: redactSensitiveHeaders(urlRequest.allHTTPHeaderFields ?? [:])))
             if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-                logger.debug("[NETWORK]: Body: \(bodyString)")
+                os_log(.debug, log: osLogger, "Body: %{public}@", bodyString)
             } else {
-                logger.debug("[NETWORK]: Body: <none>")
+                os_log(.debug, log: osLogger, "Body: <none>")
             }
-            logger.debug("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            os_log(.debug, log: osLogger, "════════════════════════════════════════")
         }
-        #endif
         
         // Store a reference to the task for logging
         weak var createdTask: URLSessionDataTask?
@@ -220,7 +207,10 @@ private extension EKNetworkRequestWrapper {
             
             let requestEndTime = DispatchTime.now()
             let requestTime = requestEndTime.uptimeNanoseconds - requestStartTime.uptimeNanoseconds
-            logger.debug("[NETWORK]: Duration is \((Double(requestTime) / 1_000_000_000).roundWithPlaces(2)) sec")
+            if self.consoleLogEnable {
+                let duration = (Double(requestTime) / 1_000_000_000).roundWithPlaces(2)
+                os_log(.debug, log: self.osLogger, "Duration: %.2f sec", duration)
+            }
             
             if let logger = self.networkLogger, let task = createdTask {
                 let responseData = data ?? Data()

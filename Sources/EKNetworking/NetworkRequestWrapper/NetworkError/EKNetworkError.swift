@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os.log
 
 public enum EKNetworkErrorType: Equatable {
 
@@ -110,7 +111,8 @@ open class EKNetworkErrorStruct: EKNetworkError {
             self.detailMessage = json?["reason"] as? String
             self.userInfo = json
         } catch let error {
-            logger.debug("Can't parse network error body: \(error)")
+            os_log(.error, log: OSLog(subsystem: "com.eknetworking.network", category: "error"), 
+                   "Can't parse network error body: %{public}@", error.localizedDescription)
         }
     }
 }

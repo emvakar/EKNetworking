@@ -10,15 +10,11 @@ let package = Package(name: "EKNetworking", platforms: [.iOS(.v15), .macOS(.v13)
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.4"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
-        .target(name: "EKNetworking", dependencies: [
-            // Dependencies declare other packages that this package depends on.
-            .product(name: "Logging", package: "swift-log"),
-        ], path: "Sources/EKNetworking"),
+        .target(name: "EKNetworking", dependencies: [], path: "Sources/EKNetworking"),
         .testTarget(
             name: "EKNetworkingTests",
             dependencies: ["EKNetworking"]

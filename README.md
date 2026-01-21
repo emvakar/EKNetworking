@@ -10,39 +10,44 @@
     .package(url: "https://github.com/emvakar/EKNetworking.git", from: "2.0.0")
 ```
 
-## Network Logging (Optional)
+## Logging
 
-EKNetworking supports pluggable network logging via dependency injection. By default, no logging is performed.
+EKNetworking provides two types of logging:
 
-### Using Pulse Logger (Optional)
+### 1. Console Logging (OSLog)
 
-Pulse logger: https://github.com/emvakar/EKPulse.git
+Built-in logging using Apple's unified logging system. View logs in Console.app or Xcode console.
 
 ```swift
 import EKNetworking
 
-// Create Pulse logger
-let pulseLogger = EKPulseNetworkLogger()
+// Enable OSLog logging
+let networkWrapper = EKNetworkRequestWrapper(consoleLogEnable: true)
 
-// Inject it into the network wrapper
-let networkWrapper = EKNetworkRequestWrapper(
-    networkLogger: pulseLogger
-)
+// View logs using Console.app or terminal:
+// log stream --predicate 'subsystem == "com.eknetworking.network"'
 ```
 
-### Custom Logger Implementation
+### 2. Custom Network Logger (Optional)
 
-You can implement your own logger by conforming to `EKNetworkLoggerProtocol`:
+For advanced logging solutions (like Pulse), implement `EKNetworkLoggerProtocol`:
 
 ```swift
 class MyCustomLogger: EKNetworkLoggerProtocol {
     func logTaskCreated(_ task: URLSessionTask) { /* ... */ }
-    func logDataTask(_ task: URLSessionTask, didReceive data: Data) { /* ... */ }
+    func logDataTask(_ task: URLSessionDataTask, didReceive data: Data) { /* ... */ }
     func logTask(_ task: URLSessionTask, didCompleteWithError error: Error?) { /* ... */ }
 }
+
+// Inject your logger
+let customLogger = MyCustomLogger()
+let networkWrapper = EKNetworkRequestWrapper(
+    consoleLogEnable: true,  // OSLog for basic logging
+    networkLogger: customLogger  // Your custom logger
+)
 ```
 
-📖 For more details on logging and Pulse integration, see [PULSE_MIGRATION_GUIDE.md](PULSE_MIGRATION_GUIDE.md)
+**Note:** For Pulse integration, see [EKPulse](https://github.com/emvakar/EKPulse.git)
 
 ## Usage
 
@@ -70,7 +75,7 @@ final class NetworkRequestProvider {
     /// pass your account manager based on EKAccountReadProtocol
     let accountRead: EKAccountReadProtocol
     
-    init(networkWrapper: EKNetworkRequestWrapperProtocol = EKNetworkRequestWrapper(logging: logger), tokenRefresher: NetworkTokenRefresherProtocol? = nil, accountWrite: AccountWriteProtocol, accountRead: AccountReadProtocol) {
+    init(networkWrapper: EKNetworkRequestWrapperProtocol = EKNetworkRequestWrapper(), tokenRefresher: NetworkTokenRefresherProtocol? = nil, accountWrite: AccountWriteProtocol, accountRead: AccountReadProtocol) {
         self.networkWrapper = networkWrapper
         self.tokenRefresher = tokenRefresher
         self.accountWrite = accountWrite
