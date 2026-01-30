@@ -19,7 +19,7 @@ final class EKNetworkingIntegrationTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        wrapper = EKNetworkRequestWrapper(consoleLogEnable: false)
+        wrapper = EKNetworkRequestWrapper()
     }
     
     override func tearDown() {

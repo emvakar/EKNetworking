@@ -24,7 +24,7 @@ final class EKNetworkingAsyncTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         let mockSession = URLSession(configuration: configuration)
         
-        wrapper = EKNetworkRequestWrapper(logEnable: false, session: mockSession)
+        wrapper = EKNetworkRequestWrapper(session: mockSession)
     }
     
     override func tearDown() {
