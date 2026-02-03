@@ -15,13 +15,6 @@ public protocol EKNetworkTokenRefresherProtocol {
 
     // Обновление токена при 5012 ошибке для ДСС токена
     func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void)
-    
-    // Async versions
-    @available(iOS 13.0, macOS 10.15, *)
-    func refreshAuthToken() async throws
-    
-    @available(iOS 13.0, macOS 10.15, *)
-    func refreshDSSAuthToken() async throws
 
 }
 
@@ -31,9 +24,17 @@ public extension EKNetworkTokenRefresherProtocol {
     func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void) {
         completion(nil)
     }
+
+}
+
+// MARK: - Bridge to Async Protocol
+
+/// Bridge implementation that provides async protocol conformance for any type
+/// that conforms to EKNetworkTokenRefresherProtocol
+@available(iOS 13.0, macOS 10.15, *)
+public extension EKNetworkTokenRefresherAsyncProtocol where Self: EKNetworkTokenRefresherProtocol {
     
-    // Default async implementation that wraps completion-based version
-    @available(iOS 13.0, macOS 10.15, *)
+    /// Default async implementation that wraps completion-based version
     func refreshAuthToken() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             refreshAuthToken { error in
@@ -46,8 +47,7 @@ public extension EKNetworkTokenRefresherProtocol {
         }
     }
     
-    // Default async implementation for DSS
-    @available(iOS 13.0, macOS 10.15, *)
+    /// Default async implementation for DSS that wraps completion-based version
     func refreshDSSAuthToken() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             refreshDSSAuthToken { error in
@@ -59,5 +59,4 @@ public extension EKNetworkTokenRefresherProtocol {
             }
         }
     }
-
 }

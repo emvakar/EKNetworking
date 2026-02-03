@@ -5,6 +5,8 @@
 //  Created on 16.01.2026.
 //  Copyright © 2026 Emil Karimov. All rights reserved.
 //
+//  Tests for async/await protocol conformance using the new
+//  EKNetworkRequestWrapperAsyncProtocol and EKNetworkTokenRefresherAsyncProtocol
 
 import XCTest
 import Foundation
@@ -24,7 +26,7 @@ final class EKNetworkingAsyncTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         let mockSession = URLSession(configuration: configuration)
         
-        wrapper = EKNetworkRequestWrapper(session: mockSession)
+        wrapper = EKNetworkRequestWrapper(loggerType: .defaultLogger, session: mockSession)
     }
     
     override func tearDown() {
@@ -301,6 +303,154 @@ final class EKNetworkingAsyncTests: XCTestCase {
         // Progress tracking should have been called at least once
         // Note: In unit tests with mocks, progress may not be fully realistic
     }
+    
+    // MARK: - Test 11: Protocol Conformance - Async Protocol Only
+    
+    func testAsyncProtocolConformance() async throws {
+        let mockData: [String: Any] = ["test": "data"]
+        MockURLProtocol.mockResponses["/test"] = .json(mockData, statusCode: 200)
+        
+        // Test that wrapper conforms to async protocol
+        let asyncWrapper: EKNetworkRequestWrapperAsyncProtocol = wrapper
+        
+        let response = try await asyncWrapper.runRequest(
+            request: MockGETRequest(path: "/test"),
+            baseURL: "https://api.example.com",
+            authToken: nil,
+            progressResult: nil,
+            showBodyResponse: false,
+            timeoutInSeconds: 10
+        )
+        
+        XCTAssertEqual(response.statusCode, 200)
+    }
+    
+    // MARK: - Test 12: Protocol Composition
+    
+    func testProtocolComposition() async throws {
+        let mockData: [String: Any] = ["composed": true]
+        MockURLProtocol.mockResponses["/composed"] = .json(mockData, statusCode: 200)
+        
+        // Test that wrapper conforms to both protocols
+        func useCallbackProtocol(_ wrapper: EKNetworkRequestWrapperProtocol) {
+            let expectation = XCTestExpectation(description: "Callback completed")
+            wrapper.runRequest(
+                request: MockGETRequest(path: "/composed"),
+                baseURL: "https://api.example.com",
+                authToken: nil,
+                progressResult: nil,
+                showBodyResponse: false,
+                timeoutInSeconds: 10
+            ) { _, _, _ in
+                expectation.fulfill()
+            }
+            wait(for: [expectation], timeout: 5)
+        }
+        
+        func useAsyncProtocol(_ wrapper: EKNetworkRequestWrapperAsyncProtocol) async throws {
+            _ = try await wrapper.runRequest(
+                request: MockGETRequest(path: "/composed"),
+                baseURL: "https://api.example.com",
+                authToken: nil,
+                progressResult: nil,
+                showBodyResponse: false,
+                timeoutInSeconds: 10
+            )
+        }
+        
+        // Both should work with the same wrapper instance
+        useCallbackProtocol(wrapper)
+        try await useAsyncProtocol(wrapper)
+    }
+    
+    // MARK: - Test 13: Token Refresher Async Protocol
+    
+    func testTokenRefresherAsyncProtocol() async throws {
+        let refresher = MockTokenRefresher()
+        
+        // Test async refresh
+        try await refresher.refreshAuthToken()
+        XCTAssertTrue(refresher.authTokenRefreshed)
+        
+        // Test DSS refresh (should use default implementation)
+        try await refresher.refreshDSSAuthToken()
+        // Default implementation does nothing, so no error is success
+    }
+    
+    // MARK: - Test 14: Token Refresher Error Handling
+    
+    func testTokenRefresherAsyncError() async {
+        let refresher = MockFailingTokenRefresher()
+        
+        do {
+            try await refresher.refreshAuthToken()
+            XCTFail("Should have thrown an error")
+        } catch let error as EKNetworkError {
+            XCTAssertEqual(error.statusCode, 401)
+        } catch {
+            XCTFail("Wrong error type")
+        }
+    }
+    
+    // MARK: - Test 15: Using Async Protocol in Generic Function
+    
+    func testGenericAsyncFunction() async throws {
+        let mockData: [String: Any] = ["generic": "test"]
+        MockURLProtocol.mockResponses["/generic"] = .json(mockData, statusCode: 200)
+        
+        func fetchData<T: EKNetworkRequestWrapperAsyncProtocol>(
+            using wrapper: T,
+            request: EKNetworkRequest
+        ) async throws -> EKResponse {
+            return try await wrapper.runRequest(
+                request: request,
+                baseURL: "https://api.example.com",
+                authToken: nil,
+                progressResult: nil,
+                showBodyResponse: false,
+                timeoutInSeconds: 10
+            )
+        }
+        
+        let response = try await fetchData(
+            using: wrapper,
+            request: MockGETRequest(path: "/generic")
+        )
+        
+        XCTAssertEqual(response.statusCode, 200)
+    }
+}
+
+// MARK: - Mock Token Refreshers
+
+@available(iOS 13.0, macOS 10.15, *)
+private class MockTokenRefresher: EKNetworkTokenRefresherProtocol, 
+                                  EKNetworkTokenRefresherAsyncProtocol {
+    var authTokenRefreshed = false
+    var dssTokenRefreshed = false
+    
+    func refreshAuthToken(completion: @escaping (EKNetworkError?) -> Void) {
+        authTokenRefreshed = true
+        completion(nil)
+    }
+    
+    func refreshDSSAuthToken(completion: @escaping (EKNetworkError?) -> Void) {
+        dssTokenRefreshed = true
+        completion(nil)
+    }
+    
+    // Async versions are automatically bridged via protocol extension!
+}
+
+@available(iOS 13.0, macOS 10.15, *)
+private class MockFailingTokenRefresher: EKNetworkTokenRefresherProtocol,
+                                         EKNetworkTokenRefresherAsyncProtocol {
+    func refreshAuthToken(completion: @escaping (EKNetworkError?) -> Void) {
+        let error = EKNetworkErrorStruct(statusCode: 401, data: nil)
+        completion(error)
+    }
+    
+    // Async version automatically throws thanks to the bridge!
 }
 
 // MARK: - Mock Request Types (reusing from existing tests)
