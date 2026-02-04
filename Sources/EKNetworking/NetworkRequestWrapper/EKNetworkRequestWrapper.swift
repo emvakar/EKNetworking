@@ -401,3 +401,44 @@ private extension EKNetworkRequestWrapper {
     }
     
 }
+
+// MARK: - Async Protocol Conformance
+
+@available(iOS 13.0, macOS 10.15, *)
+extension EKNetworkRequestWrapper: EKNetworkRequestWrapperAsyncProtocol {
+    
+    /// Async implementation that wraps the completion-based version
+    public func runRequest(
+        request: EKNetworkRequest,
+        baseURL: String,
+        authToken: (() -> String?)? = nil,
+        progressResult: ((Double) -> Void)? = nil,
+        showBodyResponse: Bool = false,
+        timeoutInSeconds: TimeInterval
+    ) async throws -> EKResponse {
+        
+        try await withCheckedThrowingContinuation { continuation in
+            runRequest(
+                request: request,
+                baseURL: baseURL,
+                authToken: authToken,
+                progressResult: progressResult,
+                showBodyResponse: showBodyResponse,
+                timeoutInSeconds: timeoutInSeconds
+            ) { statusCode, response, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let response = response {
+                    continuation.resume(returning: response)
+                } else {
+                    // Fallback error - should never happen in practice
+                    let fallbackError = EKNetworkErrorStruct(
+                        statusCode: statusCode,
+                        data: nil
+                    )
+                    continuation.resume(throwing: fallbackError)
+                }
+            }
+        }
+    }
+}

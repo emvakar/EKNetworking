@@ -12,25 +12,28 @@
 
 ## Logging
 
-EKNetworking provides two types of logging:
+EKNetworking supports logging via `EKNetworkLoggerType`:
 
-### 1. Console Logging (OSLog)
+### 1. Console logging (OSLog)
 
-Built-in logging using Apple's unified logging system. View logs in Console.app or Xcode console.
+Use `.defaultLogger` or `.sensitiveDataRedacted` for built-in OSLog. View logs in Console.app or Xcode.
 
 ```swift
 import EKNetworking
 
-// Enable OSLog logging
-let networkWrapper = EKNetworkRequestWrapper(consoleLogEnable: true)
+// Console logging (sensitive headers not redacted)
+let networkWrapper = EKNetworkRequestWrapper(loggerType: .defaultLogger)
+
+// Console logging with sensitive data redacted (tokens, cookies, etc.)
+let networkWrapper = EKNetworkRequestWrapper(loggerType: .sensitiveDataRedacted)
 
 // View logs using Console.app or terminal:
 // log stream --predicate 'subsystem == "com.eknetworking.network"'
 ```
 
-### 2. Custom Network Logger (Optional)
+### 2. Custom network logger
 
-For advanced logging solutions (like Pulse), implement `EKNetworkLoggerProtocol`:
+For advanced logging (e.g. Pulse), use `.customLogger(networkLogger:)` and implement `EKNetworkLoggerProtocol`:
 
 ```swift
 class MyCustomLogger: EKNetworkLoggerProtocol {
@@ -39,11 +42,9 @@ class MyCustomLogger: EKNetworkLoggerProtocol {
     func logTask(_ task: URLSessionTask, didCompleteWithError error: Error?) { /* ... */ }
 }
 
-// Inject your logger
 let customLogger = MyCustomLogger()
 let networkWrapper = EKNetworkRequestWrapper(
-    consoleLogEnable: true,  // OSLog for basic logging
-    networkLogger: customLogger  // Your custom logger
+    loggerType: .customLogger(networkLogger: customLogger)
 )
 ```
 
@@ -63,8 +64,8 @@ import EKNetworking
 
 final class NetworkRequestProvider {
 
-    /// Maybe your own implementation class, subcalssing from EKNetworkRequestWrapperProtocol or use default impl EKNetworkRequestWrapper()
-    let networkWrapper: EKNetworkRequestWrapperProtocol = EKNetworkRequestWrapper()
+    /// Your implementation: conform to EKNetworkRequestWrapperProtocol or use default EKNetworkRequestWrapper()
+    let networkWrapper: EKNetworkRequestWrapperProtocol = EKNetworkRequestWrapper(loggerType: .defaultLogger)
     
     /// Your own implementation for token refreshing, subcalssing from EKNetworkTokenRefresherProtocol
     let tokenRefresher: EKNetworkTokenRefresherProtocol? = nil

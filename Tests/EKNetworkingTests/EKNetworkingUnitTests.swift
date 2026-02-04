@@ -23,7 +23,7 @@ final class EKNetworkingUnitTests: XCTestCase {
         configuration.protocolClasses = [MockURLProtocol.self]
         let mockSession = URLSession(configuration: configuration)
         
-        wrapper = EKNetworkRequestWrapper(consoleLogEnable: false, session: mockSession)
+        wrapper = EKNetworkRequestWrapper(session: mockSession)
     }
     
     override func tearDown() {
@@ -758,7 +758,6 @@ final class EKNetworkingUnitTests: XCTestCase {
         let mockSession = URLSession(configuration: configuration)
         
         let backgroundWrapper = EKNetworkRequestWrapper(
-            consoleLogEnable: false,
             session: mockSession,
             callbackQueue: backgroundQueue
         )
