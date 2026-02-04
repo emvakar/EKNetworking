@@ -18,12 +18,12 @@ Migrated from **Moya + Alamofire** to **native URLSession** with **zero breaking
 - `EKMultipartFormData` - Native replacement for Moya's MultipartFormData
 
 ### Added Features
-- ✅ **Swift Concurrency (async/await)** - Modern async API available through protocol
+- ✅ **Swift Concurrency (async/await)** - Separate async protocols: `EKNetworkRequestWrapperAsyncProtocol` and `EKNetworkTokenRefresherAsyncProtocol`. Same concrete classes conform to both callback and async protocols.
 - ✅ **HTTPURLResponse.headers extension** - Moya compatibility (`response?.headers["Header-Name"]`)
 - ✅ **Configurable callback queue** - Main (default) or background thread
-- ✅ **Sensitive header redaction** - Security for logs (tokens, cookies)
+- ✅ **Logger type** - `EKNetworkLoggerType`: `.defaultLogger`, `.sensitiveDataRedacted`, or `.customLogger(networkLogger:)`
 - ✅ **POST empty body fix** - Always sends `{}` for POST/PUT (backend compatibility)
-- ✅ **Enhanced logging** - Detailed request/response debugging with redaction
+- ✅ **Enhanced logging** - Detailed request/response debugging; sensitive headers redacted when using `.sensitiveDataRedacted`
 
 ---
 
@@ -46,7 +46,7 @@ Migrated from **Moya + Alamofire** to **native URLSession** with **zero breaking
 
 ### Option 1: Completion Handlers (original, unchanged)
 ```swift
-let wrapper = EKNetworkRequestWrapper(logEnable: true)
+let wrapper = EKNetworkRequestWrapper(loggerType: .defaultLogger)
 
 wrapper.runRequest(
     request: myRequest,
@@ -64,81 +64,107 @@ wrapper.runRequest(
 }
 ```
 
-### Option 2: Async/Await (NEW! ⭐️)
+### Option 2: Async/Await (separate protocol)
 ```swift
-// Works through the protocol!
-let wrapper: EKNetworkRequestWrapperProtocol = EKNetworkRequestWrapper(logEnable: true)
+// EKNetworkRequestWrapper conforms to both EKNetworkRequestWrapperProtocol and EKNetworkRequestWrapperAsyncProtocol
+let wrapper = EKNetworkRequestWrapper(loggerType: .defaultLogger)
 
-do {
-    let response = try await wrapper.runRequest(
-        request: myRequest,
-        baseURL: "https://api.example.com",
-        authToken: { "token" },
-        timeoutInSeconds: 30
-    )
-    print("Success: \(response.statusCode)")
-    // response.headers["Content-Type"] - Still works!
-} catch let error as EKNetworkError {
-    print("Error: \(error.type)")
+// Use async protocol when you need async/await (iOS 13.0+, macOS 10.15+; availability is on the async protocol)
+if #available(iOS 13.0, macOS 10.15, *) {
+    do {
+        let response = try await wrapper.runRequest(
+            request: myRequest,
+            baseURL: "https://api.example.com",
+            authToken: { "token" },
+            timeoutInSeconds: 30
+        )
+        print("Success: \(response.statusCode)")
+        // response.headers["Content-Type"] - Still works!
+    } catch let error as EKNetworkError {
+        print("Error: \(error.type)")
+    }
 }
+
+// Or depend on the async protocol type for dependency injection:
+// let asyncWrapper: EKNetworkRequestWrapperAsyncProtocol = wrapper
 ```
 
-### Advanced Options
+### Logger and advanced options
 ```swift
-// Disable log redaction (for debugging only)
+// Console logging with sensitive data redacted (recommended for production)
+let wrapper = EKNetworkRequestWrapper(loggerType: .sensitiveDataRedacted)
+
+// Console logging without redaction (debug only)
+let wrapper = EKNetworkRequestWrapper(loggerType: .defaultLogger)
+
+// Custom logger (e.g. Pulse); no console logging from the wrapper
 let wrapper = EKNetworkRequestWrapper(
-    logEnable: true,
-    redactSensitiveData: false  // Show real tokens in logs
+    loggerType: .customLogger(networkLogger: myLogger)
 )
 
 // Background thread callbacks (completion handler version only)
 let wrapper = EKNetworkRequestWrapper(
+    loggerType: .defaultLogger,
     callbackQueue: .global()  // Default is .main
 )
 
 // Custom URLSession (for testing)
 let wrapper = EKNetworkRequestWrapper(
+    loggerType: .defaultLogger,
     session: mockSession
 )
 ```
 
 ### Async/Await Advanced Examples
 
-**Multiple concurrent requests:**
+**Multiple concurrent requests** (use when your target is iOS 13+ / macOS 10.15+):
 ```swift
-async let user = try wrapper.runRequest(
-    request: GetUserRequest(),
-    baseURL: baseURL,
-    timeoutInSeconds: 30
-)
+if #available(iOS 13.0, macOS 10.15, *) {
+    async let user = try wrapper.runRequest(
+        request: GetUserRequest(),
+        baseURL: baseURL,
+        authToken: nil,
+        progressResult: nil,
+        showBodyResponse: false,
+        timeoutInSeconds: 30
+    )
 
-async let posts = try wrapper.runRequest(
-    request: GetPostsRequest(),
-    baseURL: baseURL,
-    timeoutInSeconds: 30
-)
+    async let posts = try wrapper.runRequest(
+        request: GetPostsRequest(),
+        baseURL: baseURL,
+        authToken: nil,
+        progressResult: nil,
+        showBodyResponse: false,
+        timeoutInSeconds: 30
+    )
 
-let (userData, postsData) = try await (user, posts)
+    let (userData, postsData) = try await (user, posts)
+}
 ```
 
 **Using Task Groups:**
 ```swift
-let responses = try await withThrowingTaskGroup(of: EKResponse.self) { group in
-    for id in 1...10 {
-        group.addTask {
-            try await wrapper.runRequest(
-                request: GetPostRequest(id: id),
-                baseURL: baseURL,
-                timeoutInSeconds: 30
-            )
+if #available(iOS 13.0, macOS 10.15, *) {
+    let responses = try await withThrowingTaskGroup(of: EKResponse.self) { group in
+        for id in 1...10 {
+            group.addTask {
+                try await wrapper.runRequest(
+                    request: GetPostRequest(id: id),
+                    baseURL: baseURL,
+                    authToken: nil,
+                    progressResult: nil,
+                    showBodyResponse: false,
+                    timeoutInSeconds: 30
+                )
+            }
         }
+
+        var results: [EKResponse] = []
+        for try await response in group {
+            results.append(response)
+        }
+        return results
     }
-    
-    var results: [EKResponse] = []
-    for try await response in group {
-        results.append(response)
-    }
-    return results
 }
 ```
 
@@ -146,9 +172,9 @@ let responses = try await withThrowingTaskGroup(of: EKResponse.self) { group in
 
 ## Tests
 
-**41 comprehensive tests** - All passing ✅
+**46 comprehensive tests** - All passing ✅
 - 26 unit tests (completion handlers, mocked, fast)
-- 10 async/await tests (mocked, fast)
+- 15 async/await tests (mocked, fast; includes protocol conformance and token refresher async)
 - 5 integration tests (real API, smoke tests)
 
 ```bash
@@ -174,5 +200,6 @@ January 2026
 
 - **Threading**: Completion handlers dispatch to main thread by default (same as Moya)
 - **Headers**: `response?.headers` works exactly like Moya (via extension)
-- **Logging**: Sensitive headers (tokens, cookies) are redacted by default
-- **Compatibility**: iOS 15+, macOS 13+
+- **Logging**: Use `loggerType: .sensitiveDataRedacted` to redact sensitive headers (tokens, cookies) in logs; `.defaultLogger` does not redact
+- **Async protocols**: `EKNetworkRequestWrapperAsyncProtocol` and `EKNetworkTokenRefresherAsyncProtocol` are separate protocols; the same concrete types conform to both callback and async protocols. Async APIs are `@available(iOS 13.0, macOS 10.15, *)`
+- **Compatibility**: Package supports iOS 15+, macOS 13+ (see Package.swift)

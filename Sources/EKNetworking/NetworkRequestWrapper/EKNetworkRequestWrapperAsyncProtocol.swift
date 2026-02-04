@@ -3,7 +3,7 @@
 //  EKNetworking
 //
 //  Created by Egor Solovev on 03.02.2026.
-//  Copyright © 2019 Emil Karimov. All rights reserved.
+//  Copyright © 2026 Emil Karimov. All rights reserved.
 //
 
 import Foundation
