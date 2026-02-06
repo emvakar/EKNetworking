@@ -173,7 +173,7 @@ if #available(iOS 13.0, macOS 10.15, *) {
 ## Tests
 
 **46 comprehensive tests** - All passing ✅
-- 26 unit tests (completion handlers, mocked, fast)
+- 27 unit tests (completion handlers, mocked, fast)
 - 15 async/await tests (mocked, fast; includes protocol conformance and token refresher async)
 - 5 integration tests (real API, smoke tests)
 
