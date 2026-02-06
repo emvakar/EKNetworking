@@ -359,8 +359,8 @@ private extension EKNetworkRequestWrapper {
                     urlRequest.httpBody = jsonData
                     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 }
-            } else {
-                let bodyParameters = request.bodyParameters ?? [:]
+            } else if let bodyParameters = request.bodyParameters, !bodyParameters.isEmpty {
+                // Handle JSON body only when there are actual parameters
                 if let jsonData = try? JSONSerialization.data(withJSONObject: bodyParameters, options: []) {
                     urlRequest.httpBody = jsonData
                     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
