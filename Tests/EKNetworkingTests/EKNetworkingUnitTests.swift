@@ -818,13 +818,13 @@ final class EKNetworkingUnitTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
     
-    // MARK: - Test 26: POST Without Body Parameters Sends Empty JSON Object
+    // MARK: - Test 26: POST With nil Body Parameters Sends No Body
     
-    func testPOSTWithoutBodyParametersSendsEmptyJSON() {
+    func testPOSTWithoutBodyParametersSendsNoBody() {
         let mockResponse: [String: Any] = ["success": true]
         MockURLProtocol.mockResponses["/action"] = .json(mockResponse, statusCode: 200)
         
-        let expectation = XCTestExpectation(description: "POST without body sends {}")
+        let expectation = XCTestExpectation(description: "POST without body parameters sends no body")
         let request = MockEmptyPOSTRequest(path: "/action")
         
         wrapper.runRequest(
@@ -838,21 +838,66 @@ final class EKNetworkingUnitTests: XCTestCase {
             XCTAssertNotNil(response, "Response should not be nil")
             XCTAssertNil(error, "Error should be nil on success")
             
-            // Verify the request was sent with JSON content type
+            // Verify the request was sent without a body
             if let lastRequest = MockURLProtocol.requestHistory.last {
-                // Check Content-Type header (proves we're sending JSON body)
+                // Check Content-Type header is NOT set when bodyParameters is nil
                 let contentType = lastRequest.value(forHTTPHeaderField: "Content-Type")
-                XCTAssertEqual(contentType, "application/json", "Content-Type should be application/json")
+                XCTAssertNil(contentType, "Content-Type should not be set when bodyParameters is nil")
                 
                 // Check HTTP method is POST
                 XCTAssertEqual(lastRequest.httpMethod, "POST", "Should be POST request")
                 
-                // Note: httpBody might be nil in URLProtocol due to streaming
-                // The presence of Content-Type: application/json is sufficient proof
-                // that we're setting up the request correctly with an empty JSON body
+                // httpBody should be nil when bodyParameters is nil
+                XCTAssertNil(lastRequest.httpBody, "httpBody should be nil when bodyParameters is nil")
                 
-                // Verify the response was successful (proves server accepted empty body)
-                XCTAssertEqual(statusCode, 200, "Server should accept POST with empty JSON body")
+                // Verify the response was successful (proves server accepts POST without body)
+                XCTAssertEqual(statusCode, 200, "Server should accept POST without body")
+            } else {
+                XCTFail("No request was captured")
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    // MARK: - Test 27: POST With Empty Dictionary Body Parameters Sends Empty JSON Object
+    
+    func testPOSTWithEmptyDictionaryBodyParametersSendsEmptyJSON() {
+        let mockResponse: [String: Any] = ["success": true]
+        MockURLProtocol.mockResponses["/action"] = .json(mockResponse, statusCode: 200)
+        
+        let expectation = XCTestExpectation(description: "POST with empty dictionary sends {}")
+        let request = MockEmptyDictionaryPOSTRequest(path: "/action")
+        
+        wrapper.runRequest(
+            request: request,
+            baseURL: "https://api.example.com",
+            authToken: nil,
+            progressResult: nil,
+            timeoutInSeconds: 10
+        ) { statusCode, response, error in
+            XCTAssertEqual(statusCode, 200)
+            XCTAssertNotNil(response, "Response should not be nil")
+            XCTAssertNil(error, "Error should be nil on success")
+            
+            // Verify the request was sent with empty JSON body
+            if let lastRequest = MockURLProtocol.requestHistory.last {
+                // Check Content-Type header is set when bodyParameters is [:] (empty but not nil)
+                let contentType = lastRequest.value(forHTTPHeaderField: "Content-Type")
+                XCTAssertEqual(contentType, "application/json", "Content-Type should be application/json for empty dictionary")
+                
+                // Check HTTP method is POST
+                XCTAssertEqual(lastRequest.httpMethod, "POST", "Should be POST request")
+                
+                // Note: httpBody might be nil in URLProtocol due to streaming,
+                // but the presence of Content-Type: application/json proves that
+                // bodyParameters [:] is being serialized and sent as {}
+                // This behavior is different from bodyParameters: nil which sends no Content-Type
+                
+                // Verify the response was successful
+                XCTAssertEqual(statusCode, 200, "Server should accept POST with empty JSON object")
             } else {
                 XCTFail("No request was captured")
             }
@@ -1048,6 +1093,25 @@ private struct MockEmptyPOSTRequest: EKNetworkRequest {
     var method: EKRequestHTTPMethod { .post }
     var urlParameters: [String: Any]? { nil }
     var bodyParameters: [String: Any]? { nil }  // No body parameters
+    var headers: [String: String]? { nil }
+    var array: [Any]? { nil }
+    var multipartBody: [EKMultipartFormData]? { nil }
+    var authHeader: AuthHeader { .bearerToken }
+    
+    init(from decoder: Decoder) throws { fatalError("Not implemented") }
+    func encode(to encoder: Encoder) throws { }
+    
+    init(path: String) {
+        self.path = path
+    }
+}
+
+private struct MockEmptyDictionaryPOSTRequest: EKNetworkRequest {
+    let path: String
+    
+    var method: EKRequestHTTPMethod { .post }
+    var urlParameters: [String: Any]? { nil }
+    var bodyParameters: [String: Any]? { [:] }  // Empty dictionary (not nil)
     var headers: [String: String]? { nil }
     var array: [Any]? { nil }
     var multipartBody: [EKMultipartFormData]? { nil }
