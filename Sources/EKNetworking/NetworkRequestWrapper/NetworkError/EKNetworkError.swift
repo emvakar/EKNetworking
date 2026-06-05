@@ -75,7 +75,11 @@ open class EKNetworkErrorStruct: EKNetworkError {
     /// Creates an error from an underlying `NSError` (e.g. `JSONDecoder` failure).
     /// - Parameter error: The underlying system error.
     public init(error: NSError) {
+        self.statusCode = error.code
+        self.setNetworkErrorType(from: error.code)
         self.description = error.localizedDescription
+        self.message = error.localizedDescription
+        self.detailMessage = error.localizedDescription
         self.userInfo = error.userInfo
     }
 
@@ -86,9 +90,6 @@ open class EKNetworkErrorStruct: EKNetworkError {
     ///   - statusCode: HTTP or `URLError` status code.
     open func parseData(data: Data?, statusCode: Int?) {
         guard let data = data else {
-            if let statusCode = statusCode {
-                fillMessagesIfNeeded(for: statusCode)
-            }
             return
         }
 
@@ -106,14 +107,6 @@ open class EKNetworkErrorStruct: EKNetworkError {
             os_log(.error, log: OSLog(subsystem: "com.eknetworking.network", category: "error"),
                    "Can't parse network error body: %{public}@", error.localizedDescription)
         }
-    }
-    
-    /// Returns a fallback message for errors without a response body.
-    /// - Parameter statusCode: HTTP or `URLError` status code.
-    /// - Returns: A fallback message, or `nil` when no fallback should be applied.
-    public func fallbackMessage(for statusCode: Int) -> String? {
-        guard statusCode < 0 else { return nil }
-        return URLError(URLError.Code(rawValue: statusCode)).localizedDescription
     }
 }
 
@@ -146,16 +139,5 @@ private extension EKNetworkErrorStruct {
         }
 
         self.type = networkErrorType
-    }
-
-    func fillMessagesIfNeeded(for statusCode: Int) {
-        guard description == nil, message == nil, detailMessage == nil else { return }
-        guard let text = fallbackMessage(for: statusCode) else { return }
-
-        guard !text.isEmpty else { return }
-
-        description = text
-        message = text
-        detailMessage = text
     }
 }
