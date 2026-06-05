@@ -234,7 +234,12 @@ private extension EKNetworkRequestWrapper {
             
             if let error = error {
                 let nsError = error as NSError
-                let networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: data)
+                let networkError: EKNetworkErrorStruct
+                if data == nil && nsError.code < 0 {
+                    networkError = EKNetworkErrorStruct(error: nsError)
+                } else {
+                    networkError = EKNetworkErrorStruct(statusCode: nsError.code, data: data)
+                }
                 
                 self.callbackQueue.async {
                     completion(nsError.code, nil, networkError)

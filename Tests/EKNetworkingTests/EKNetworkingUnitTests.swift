@@ -579,9 +579,15 @@ final class EKNetworkingUnitTests: XCTestCase {
     // MARK: - Test 18b: Transport error messages
 
     func testTransportErrorPreservesLocalizedDescription() {
-        let networkError = EKNetworkErrorStruct(statusCode: URLError.timedOut.rawValue, data: nil)
-        let expected = URLError(.timedOut).localizedDescription
+        let expected = "The request timed out."
+        let nsError = NSError(
+            domain: NSURLErrorDomain,
+            code: URLError.timedOut.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: expected]
+        )
+        let networkError = EKNetworkErrorStruct(error: nsError)
 
+        XCTAssertEqual(networkError.statusCode, URLError.timedOut.rawValue)
         XCTAssertEqual(networkError.type, .timedOut)
         XCTAssertEqual(networkError.description, expected)
         XCTAssertEqual(networkError.message, expected)
