@@ -576,6 +576,28 @@ final class EKNetworkingUnitTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
     
+    // MARK: - Test 18b: Transport error messages
+
+    func testTransportErrorPreservesLocalizedDescription() {
+        let networkError = EKNetworkErrorStruct(statusCode: URLError.timedOut.rawValue, data: nil)
+        let expected = URLError(.timedOut).localizedDescription
+
+        XCTAssertEqual(networkError.type, .timedOut)
+        XCTAssertEqual(networkError.description, expected)
+        XCTAssertEqual(networkError.message, expected)
+        XCTAssertEqual(networkError.detailMessage, expected)
+    }
+
+    func testHTTPErrorBodyOverridesLocalizedDescription() {
+        let reason = "Invalid token"
+        let data = try! JSONSerialization.data(withJSONObject: ["reason": reason])
+        let networkError = EKNetworkErrorStruct(statusCode: 401, data: data)
+
+        XCTAssertEqual(networkError.description, reason)
+        XCTAssertEqual(networkError.message, reason)
+        XCTAssertEqual(networkError.detailMessage, reason)
+    }
+
     // MARK: - Test 19: Multipart Upload
     
     func testMultipartUpload() {

@@ -9,6 +9,8 @@
 import Foundation
 import os.log
 
+// MARK: - EKNetworkErrorType
+
 public enum EKNetworkErrorType: Equatable {
 
     case noConnection
@@ -24,6 +26,8 @@ public enum EKNetworkErrorType: Equatable {
 
 }
 
+// MARK: - EKNetworkError
+
 public protocol EKNetworkError: Error {
 
     var statusCode: Int { get }
@@ -37,6 +41,8 @@ public protocol EKNetworkError: Error {
 
 }
 
+// MARK: - EKNetworkErrorStruct
+
 open class EKNetworkErrorStruct: EKNetworkError {
 
     public var statusCode: Int = 0
@@ -49,6 +55,12 @@ open class EKNetworkErrorStruct: EKNetworkError {
     public var userInfo: [String: Any]? // полезно при ошибке JSONDecoder (если неверны ключи), вытащить можно только из NSError
     public var data: Data?
 
+    // MARK: - Public
+
+    /// Creates an error from an HTTP status code and optional response body.
+    /// - Parameters:
+    ///   - statusCode: HTTP status code or `URLError` code. Pass `nil` to get a default empty instance.
+    ///   - data: Raw response body, if any.
     public init(statusCode: Int?, data: Data?) {
         guard let statusCode = statusCode else {
             return
@@ -60,13 +72,57 @@ open class EKNetworkErrorStruct: EKNetworkError {
         self.data = data
     }
 
+    /// Creates an error from an underlying `NSError` (e.g. `JSONDecoder` failure).
+    /// - Parameter error: The underlying system error.
     public init(error: NSError) {
         self.description = error.localizedDescription
         self.userInfo = error.userInfo
     }
 
-    private func setNetworkErrorType(from statusCode: Int) {
-        var networkErrorType: EKNetworkErrorType
+    /// Parses the response body and fills message fields from JSON when possible.
+    /// Override in a subclass to support a custom error payload format.
+    /// - Parameters:
+    ///   - data: Raw response body.
+    ///   - statusCode: HTTP or `URLError` status code.
+    open func parseData(data: Data?, statusCode: Int?) {
+        guard let data = data else {
+            if let statusCode = statusCode {
+                fillMessagesIfNeeded(for: statusCode)
+            }
+            return
+        }
+
+        self.plainBody = String(data: data, encoding: .utf8)
+
+        do {
+            let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+
+            self.errorCode = statusCode
+            self.description = json?["reason"] as? String
+            self.message = json?["reason"] as? String
+            self.detailMessage = json?["reason"] as? String
+            self.userInfo = json
+        } catch let error {
+            os_log(.error, log: OSLog(subsystem: "com.eknetworking.network", category: "error"),
+                   "Can't parse network error body: %{public}@", error.localizedDescription)
+        }
+    }
+    
+    /// Returns a fallback message for errors without a response body.
+    /// - Parameter statusCode: HTTP or `URLError` status code.
+    /// - Returns: A fallback message, or `nil` when no fallback should be applied.
+    public func fallbackMessage(for statusCode: Int) -> String? {
+        guard statusCode < 0 else { return nil }
+        return URLError(URLError.Code(rawValue: statusCode)).localizedDescription
+    }
+}
+
+// MARK: - Private
+
+private extension EKNetworkErrorStruct {
+
+    func setNetworkErrorType(from statusCode: Int) {
+        let networkErrorType: EKNetworkErrorType
 
         switch statusCode {
         case URLError.notConnectedToInternet.rawValue, URLError.cannotFindHost.rawValue, URLError.cannotConnectToHost.rawValue:
@@ -85,9 +141,6 @@ open class EKNetworkErrorStruct: EKNetworkError {
             networkErrorType = .forbidden
         case 500...599:
             networkErrorType = .internalServerError
-        /// Alamofire конвертирует коды отсутствия интерента в свои https://github.com/Alamofire/Alamofire/issues/3470
-        case 13:
-            networkErrorType = .noConnection
         default:
             networkErrorType = .unspecified(statusCode: statusCode)
         }
@@ -95,24 +148,14 @@ open class EKNetworkErrorStruct: EKNetworkError {
         self.type = networkErrorType
     }
 
-    open func parseData(data: Data?, statusCode: Int?) {
-        guard let data = data else {
-            return
-        }
+    func fillMessagesIfNeeded(for statusCode: Int) {
+        guard description == nil, message == nil, detailMessage == nil else { return }
+        guard let text = fallbackMessage(for: statusCode) else { return }
 
-        self.plainBody = String(data: data, encoding: .utf8)
+        guard !text.isEmpty else { return }
 
-        do {
-            let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-
-            self.errorCode = statusCode
-            self.description = json?["reason"] as? String
-            self.message = json?["reason"] as? String
-            self.detailMessage = json?["reason"] as? String
-            self.userInfo = json
-        } catch let error {
-            os_log(.error, log: OSLog(subsystem: "com.eknetworking.network", category: "error"), 
-                   "Can't parse network error body: %{public}@", error.localizedDescription)
-        }
+        description = text
+        message = text
+        detailMessage = text
     }
 }
