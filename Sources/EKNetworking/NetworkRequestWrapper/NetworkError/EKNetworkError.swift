@@ -58,6 +58,7 @@ open class EKNetworkErrorStruct: EKNetworkError {
         self.setNetworkErrorType(from: statusCode)
         self.parseData(data: data, statusCode: statusCode)
         self.data = data
+        fillMessagesIfNeeded(for: statusCode)
     }
 
     public init(error: NSError) {
@@ -114,5 +115,22 @@ open class EKNetworkErrorStruct: EKNetworkError {
             os_log(.error, log: OSLog(subsystem: "com.eknetworking.network", category: "error"), 
                    "Can't parse network error body: %{public}@", error.localizedDescription)
         }
+    }
+
+    private func fillMessagesIfNeeded(for statusCode: Int) {
+        guard description == nil, message == nil, detailMessage == nil else { return }
+
+        let text: String
+        if statusCode < 0 {
+            text = URLError(URLError.Code(rawValue: statusCode)).localizedDescription
+        } else {
+            return
+        }
+
+        guard !text.isEmpty else { return }
+
+        description = text
+        message = text
+        detailMessage = text
     }
 }
