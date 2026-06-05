@@ -70,7 +70,6 @@ open class EKNetworkErrorStruct: EKNetworkError {
         self.setNetworkErrorType(from: statusCode)
         self.parseData(data: data, statusCode: statusCode)
         self.data = data
-        fillMessagesIfNeeded(for: statusCode)
     }
 
     /// Creates an error from an underlying `NSError` (e.g. `JSONDecoder` failure).
@@ -87,6 +86,9 @@ open class EKNetworkErrorStruct: EKNetworkError {
     ///   - statusCode: HTTP or `URLError` status code.
     open func parseData(data: Data?, statusCode: Int?) {
         guard let data = data else {
+            if let statusCode = statusCode {
+                fillMessagesIfNeeded(for: statusCode)
+            }
             return
         }
 
@@ -104,6 +106,14 @@ open class EKNetworkErrorStruct: EKNetworkError {
             os_log(.error, log: OSLog(subsystem: "com.eknetworking.network", category: "error"),
                    "Can't parse network error body: %{public}@", error.localizedDescription)
         }
+    }
+    
+    /// Returns a fallback message for errors without a response body.
+    /// - Parameter statusCode: HTTP or `URLError` status code.
+    /// - Returns: A fallback message, or `nil` when no fallback should be applied.
+    public func fallbackMessage(for statusCode: Int) -> String? {
+        guard statusCode < 0 else { return nil }
+        return URLError(URLError.Code(rawValue: statusCode)).localizedDescription
     }
 }
 
@@ -140,13 +150,7 @@ private extension EKNetworkErrorStruct {
 
     func fillMessagesIfNeeded(for statusCode: Int) {
         guard description == nil, message == nil, detailMessage == nil else { return }
-
-        let text: String
-        if statusCode < 0 {
-            text = URLError(URLError.Code(rawValue: statusCode)).localizedDescription
-        } else {
-            return
-        }
+        guard let text = fallbackMessage(for: statusCode) else { return }
 
         guard !text.isEmpty else { return }
 
